@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="API for VP">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/com.microsoft.z3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/openapi.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

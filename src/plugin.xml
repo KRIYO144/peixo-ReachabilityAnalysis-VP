@@ -1,0 +1,37 @@
+<plugin
+        id="peixo"
+        name="Proof"
+        description="Fundament fuer ein erweiterbares Plugin"
+        provider="Visual Paradigm"
+        class="peixo.actions.VPPlugin">
+<!--
+     <runtime>
+        <library path="com.microsoft.z3.jar" relativePath="true"/>
+    </runtime>
+-->
+<!--    Here is the Action Set-->
+    <actionSets>
+        <actionSet id="peixo.actionset">
+            <action
+                    id="peixo.actions.HotReload"
+                    actionType="generalAction"
+                    label="Reload Plugin Classes"
+                    tooltip="Reload Plugin Classes"
+                    style="normal"
+                    menuPath="Tools">
+                <actionController
+                        class="peixo.actions.HotReloadController"/>
+            </action>
+            <action
+                id="peixo.actions.ProofForSeq"
+                actionType="generalAction"
+                label="Prove Diagramms"
+                tooltip="proves the active Sequence Diagramm for completeness"
+                style="normal"
+                menuPath="Tools">
+                <actionController
+                    class="peixo.actions.ProofForSeqController"/>
+            </action>
+        </actionSet>
+    </actionSets>
+</plugin>
