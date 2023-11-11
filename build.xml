@@ -1,0 +1,18 @@
+<project name="peixo" default="build">
+    <description>
+        ANT build script for a Visual Paradigm plugin.
+    </description>
+
+    <property name="src" location="."/>
+    <property name="build" location="build"/>
+    <property name="openapi" location="C:\Users\peixo\Documents\Entwicklung\VP_Plugin\openapi.jar"/>
+    <property name="vp" location="C:\Users\peixo\AppData\Roaming\VisualParadigm\plugins"/>
+
+    <target name="build">
+        <javac srcdir="${src}" destdir="${build}" classpath="${openapi}" includeAntRuntime="no"/>
+        <copy todir="${vp}/${ant.project.name}">
+            <fileset dir="${build}"/>
+        </copy>
+        <copy file="src/plugin.xml" todir="${vp}/${ant.project.name}"/>
+    </target>
+</project>

@@ -3,7 +3,7 @@
         name="Proof"
         description="Fundament fuer ein erweiterbares Plugin"
         provider="Visual Paradigm"
-        class="peixo.actions.VPPlugin">
+        class="peixo.VPPlugin">
 <!--
      <runtime>
         <library path="com.microsoft.z3.jar" relativePath="true"/>
@@ -31,6 +31,16 @@
                 menuPath="Tools">
                 <actionController
                     class="peixo.actions.ProofForSeqController"/>
+            </action>
+            <action
+                    id="peixo.actions.SelectDiagramsToProve"
+                    actionType="generalAction"
+                    label="Show Pane Test"
+                    tooltip="proves the active Sequence Diagramm for completeness"
+                    style="normal"
+                    menuPath="Tools">
+                <actionController
+                        class="peixo.actions.SelectDiagramsToProveController"/>
             </action>
         </actionSet>
     </actionSets>

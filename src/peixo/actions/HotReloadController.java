@@ -26,7 +26,6 @@ public class HotReloadController implements VPActionController {
         ApplicationManager manager = ApplicationManager.instance();
         manager.reloadPluginClasses("peixo");
         HotReload();
-
     }
 
     @Override
