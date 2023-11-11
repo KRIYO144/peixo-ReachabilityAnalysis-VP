@@ -36,12 +36,12 @@ public class CustomDialogHandler implements IDialogHandler {
         list = new JList<>();
         JSplitPane splitPane = new JSplitPane();
         JPanel panelForLabel = new JPanel();
-        JLabel label = new JLabel();
+        JLabel SelectedDiagramLabel = new JLabel();
         JScrollPane listScroller = new JScrollPane(list);
+        JLabel DiagramImages = new JLabel();
 
         // Get All Diagrams of the Project
         ArrayList<IDiagramUIModel> diagramArrayList = SelectDiagramsToProveController.getDiagrams();
-
 
         //Fill Jlist
         list.setModel(DiagramDataModelForList);
@@ -55,20 +55,17 @@ public class CustomDialogHandler implements IDialogHandler {
             @Override
             public void valueChanged(ListSelectionEvent e) {
                 ListItem item = list.getSelectedValue();
-                label.setText("Dieses Item ist augewählt" + item.DiagramName + "ID: " + item.DiagramId);
+                SelectedDiagramLabel.setText("Dieses Item ist augewählt" + item.DiagramName + "ID: " + item.DiagramId);
+                ImageIcon icon = new ImageIcon(SelectDiagramsToProveController.getDiagramIcons(item.DiagramId));
+                DiagramImages.setIcon(icon);
             }
         });
-        panelForLabel.add(label);
-
-        //Test
-        ExportDiagramAsImageOption option = new ExportDiagramAsImageOption(ExportDiagramAsImageOption.IMAGE_TYPE_PNG);
-        Image image = ApplicationManager.instance().getModelConvertionManager().exportDiagramAsImage(diagramArrayList.get(0), option);
+        panelForLabel.add(SelectedDiagramLabel);
 
 
         // Add all Components to pane
-        JLabel imageLabel = new JLabel(new ImageIcon(image));
         mainPane.add(listScroller);
-        mainPane.add(imageLabel);
+        mainPane.add(DiagramImages);
         mainPane.add(panelForLabel);
         return mainPane;
     }

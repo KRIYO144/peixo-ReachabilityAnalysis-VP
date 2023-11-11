@@ -1,7 +1,6 @@
 package peixo.actions;
 
-import com.vp.plugin.ProjectManager;
-import com.vp.plugin.ViewManager;
+import com.vp.plugin.*;
 import com.vp.plugin.action.VPAction;
 import com.vp.plugin.action.VPActionController;
 import com.vp.plugin.diagram.IDiagramUIModel;
@@ -10,6 +9,7 @@ import peixo.MyThread;
 import peixo.VPPlugin;
 import peixo.dialogs.CustomDialogHandler;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -44,6 +44,15 @@ public class SelectDiagramsToProveController implements VPActionController {
             diagramList.add(model);
         }
         return diagramList;
+    }
+
+    public Image getDiagramIcons(String id) {
+        ExportDiagramAsImageOption option = new ExportDiagramAsImageOption(ExportDiagramAsImageOption.IMAGE_TYPE_PNG);
+        ProjectManager projectManager = VPPlugin.PROJECT_MANAGER;
+        DiagramManager diagramManager = VPPlugin.DIAGRAM_MANAGER;
+        IDiagramUIModel activeDiagram = projectManager.getProject().getDiagramById(id);
+
+        return ApplicationManager.instance().getModelConvertionManager().exportDiagramAsImage(activeDiagram, option);
     }
 
 }
