@@ -2,9 +2,7 @@ package peixo.dialogs;
 
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.ExportDiagramAsImageOption;
-import com.vp.plugin.ProjectManager;
 import com.vp.plugin.ViewManager;
-import com.vp.plugin.diagram.IDiagramElement;
 import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.view.IDialog;
 import com.vp.plugin.view.IDialogHandler;
@@ -14,48 +12,41 @@ import peixo.actions.SelectDiagramsToProveController;
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.text.Element;
-import javax.swing.text.StyleConstants;
-import javax.swing.text.html.HTML;
-import javax.swing.text.html.HTMLDocument;
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Collection;
 
 public class CustomDialogHandler implements IDialogHandler {
     private IDialog _dialog;
 
-    private Component component;
     private JList<ListItem> list;
+
     private JScrollPane listScroller;
-    private JSplitPane splitPane;
     private JEditorPane diagramImg;
 
     public ViewManager viewManager = VPPlugin.VIEW_MANAGER;
-    public ProjectManager pm = VPPlugin.PROJECT_MANAGER;
 
     SelectDiagramsToProveController SelectDiagramsToProveController = new SelectDiagramsToProveController();
 
     @Override
     public Component getComponent() {
         // Create All Components
-        JPanel pane = new JPanel();
-        pane.setLayout(new GridLayout(2, 2));
-        DefaultListModel<ListItem> model = new DefaultListModel<>();
+        JPanel mainPane = new JPanel();
+        mainPane.setLayout(new GridLayout(2, 2));
+        DefaultListModel<ListItem> DiagramDataModelForList = new DefaultListModel<>();
         list = new JList<>();
-        splitPane = new JSplitPane();
+        JSplitPane splitPane = new JSplitPane();
         JPanel panelForLabel = new JPanel();
         JLabel label = new JLabel();
         JScrollPane listScroller = new JScrollPane(list);
 
         // Get All Diagrams of the Project
-        ArrayList<IDiagramUIModel> diagramlist = SelectDiagramsToProveController.getDiagrams();
+        ArrayList<IDiagramUIModel> diagramArrayList = SelectDiagramsToProveController.getDiagrams();
 
 
         //Fill Jlist
-        list.setModel(model);
-        for (IDiagramUIModel m : diagramlist) {
-            model.addElement(new ListItem(m.getId(), m.getName(), m) {
+        list.setModel(DiagramDataModelForList);
+        for (IDiagramUIModel m : diagramArrayList) {
+            DiagramDataModelForList.addElement(new ListItem(m.getId(), m.getName(), m) {
             });
         }
         list.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
@@ -70,21 +61,16 @@ public class CustomDialogHandler implements IDialogHandler {
         panelForLabel.add(label);
 
         //Test
-        String lDescription = diagramlist.get(0).getHtmlDocumentation();
         ExportDiagramAsImageOption option = new ExportDiagramAsImageOption(ExportDiagramAsImageOption.IMAGE_TYPE_PNG);
-        Image image = ApplicationManager.instance().getModelConvertionManager().exportDiagramAsImage(diagramlist.get(0), option);
-        viewManager.showMessage(lDescription);
+        Image image = ApplicationManager.instance().getModelConvertionManager().exportDiagramAsImage(diagramArrayList.get(0), option);
 
 
         // Add all Components to pane
         JLabel imageLabel = new JLabel(new ImageIcon(image));
-        pane.add(listScroller);
-        pane.add(imageLabel);
-        pane.add(panelForLabel);
-        this.component = pane;
-
-
-        return pane;
+        mainPane.add(listScroller);
+        mainPane.add(imageLabel);
+        mainPane.add(panelForLabel);
+        return mainPane;
     }
 
 
