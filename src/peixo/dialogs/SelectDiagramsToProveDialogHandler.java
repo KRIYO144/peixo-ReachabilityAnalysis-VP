@@ -1,7 +1,5 @@
 package peixo.dialogs;
 
-import com.vp.plugin.ApplicationManager;
-import com.vp.plugin.ExportDiagramAsImageOption;
 import com.vp.plugin.ViewManager;
 import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.view.IDialog;
@@ -10,18 +8,15 @@ import peixo.VPPlugin;
 import peixo.actions.SelectDiagramsToProveController;
 
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.List;
 
-public class CustomDialogHandler implements IDialogHandler {
+
+public class SelectDiagramsToProveDialogHandler implements IDialogHandler {
     private IDialog _dialog;
 
     private JList<ListItem> list;
-
-    private JScrollPane listScroller;
-    private JEditorPane diagramImg;
 
     public ViewManager viewManager = VPPlugin.VIEW_MANAGER;
 
@@ -29,45 +24,95 @@ public class CustomDialogHandler implements IDialogHandler {
 
     @Override
     public Component getComponent() {
+
+        /*
+         *
+         * This UI works with a upperPanel and a bottomPanel
+         * UpperPanel is Parent of splitPlane
+         * splitPlane is Parent of diagramImages and panelForList which contains the ScrollList of the selectable Diagrams
+         *
+         * BottomPanel is Parent of solveButton and cancelButton
+         *
+         * */
         // Create All Components
-        JPanel mainPane = new JPanel();
-        mainPane.setLayout(new GridLayout(2, 2));
+        JPanel mainPanel = new JPanel();
+        JPanel upperPanel = new JPanel();
+        JPanel bottomPanel = new JPanel();
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        JLabel diagramImages = new JLabel();
+        JPanel panelForList = new JPanel();
+
         DefaultListModel<ListItem> DiagramDataModelForList = new DefaultListModel<>();
         list = new JList<>();
-        JSplitPane splitPane = new JSplitPane();
-        JPanel panelForLabel = new JPanel();
-        JLabel SelectedDiagramLabel = new JLabel();
         JScrollPane listScroller = new JScrollPane(list);
-        JLabel DiagramImages = new JLabel();
+        JPanel panelForButtons = new JPanel();
+        JButton okButton = new JButton("OK");
+        JButton cancelButton = new JButton("CANCEL");
+
+        // Options of the Components
+        list.setModel(DiagramDataModelForList);
+        list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        list.setLayoutOrientation(JList.HORIZONTAL_WRAP);
+        diagramImages.setPreferredSize(new Dimension(400, 400));
 
         // Get All Diagrams of the Project
         ArrayList<IDiagramUIModel> diagramArrayList = SelectDiagramsToProveController.getDiagrams();
 
         //Fill Jlist
-        list.setModel(DiagramDataModelForList);
         for (IDiagramUIModel m : diagramArrayList) {
             DiagramDataModelForList.addElement(new ListItem(m.getId(), m.getName(), m) {
             });
         }
-        list.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
-        list.setLayoutOrientation(JList.HORIZONTAL_WRAP);
-        list.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-            @Override
-            public void valueChanged(ListSelectionEvent e) {
-                ListItem item = list.getSelectedValue();
-                SelectedDiagramLabel.setText("Dieses Item ist augewählt" + item.DiagramName + "ID: " + item.DiagramId);
-                ImageIcon icon = new ImageIcon(SelectDiagramsToProveController.getDiagramIcons(item.DiagramId));
-                DiagramImages.setIcon(icon);
+        // Add Listener
+        list.getSelectionModel().addListSelectionListener(e -> {
+            ListItem item = list.getSelectedValue();
+            ImageIcon icon = new ImageIcon(SelectDiagramsToProveController.getDiagramIcons(item.DiagramId));
+            diagramImages.setIcon(icon);
+        });
+
+        okButton.addActionListener(e -> {
+            List<ListItem> item = list.getSelectedValuesList();
+            for (ListItem i : item) {
+                viewManager.showMessage(i.DiagramName);
             }
         });
-        panelForLabel.add(SelectedDiagramLabel);
 
+        cancelButton.addActionListener(e -> mainPanel.setVisible(false)); // Does not work as intended!
 
         // Add all Components to pane
-        mainPane.add(listScroller);
-        mainPane.add(DiagramImages);
-        mainPane.add(panelForLabel);
-        return mainPane;
+
+        // Upper
+        panelForList.add(listScroller);
+        listScroller.setMinimumSize(new Dimension(200, 200));
+        // Diagram Images Panel
+        diagramImages.setMinimumSize(new Dimension(200, 200));
+        diagramImages.setPreferredSize(new Dimension(600, 600));
+        diagramImages.setBorder(BorderFactory.createEmptyBorder(10, 40, 10, 10));
+        // Splitpane
+        splitPane.setLeftComponent(listScroller);
+        splitPane.setRightComponent(diagramImages);
+        splitPane.setDividerLocation(200);
+        splitPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JPanel panelForHeading = new JPanel();
+        panelForHeading.add(new JLabel("Choose one or multiple Diagrams to check them"));
+
+        upperPanel.setLayout(new BorderLayout(20, 20));
+        upperPanel.add(splitPane, BorderLayout.CENTER);
+        upperPanel.add(panelForHeading, BorderLayout.NORTH);
+        upperPanel.setBorder(BorderFactory.createEmptyBorder(30, 10, 10, 10));
+
+        // Bottom
+//        bottomPanel.setLayout(new GridLayout(0, 2));
+        panelForButtons.add(okButton);
+        panelForButtons.add(cancelButton);
+        panelForButtons.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        bottomPanel.add(panelForButtons);
+
+        mainPanel.setLayout(new BorderLayout(25, 25));
+        mainPanel.add(panelForHeading, BorderLayout.PAGE_START);
+        mainPanel.add(splitPane, BorderLayout.CENTER);
+        mainPanel.add(bottomPanel, BorderLayout.SOUTH);
+        return mainPanel;
     }
 
 
@@ -75,16 +120,13 @@ public class CustomDialogHandler implements IDialogHandler {
     public void prepare(IDialog dialog) {
         this._dialog = dialog;
         _dialog.setModal(true);
-        _dialog.setTitle("Test");
+        _dialog.setTitle("Select Diagrams to Check");
         _dialog.setResizable(true);
-        _dialog.pack();
+        _dialog.setSize(720, 480);
     }
 
     @Override
     public void shown() {
-        ViewManager viewManager = VPPlugin.VIEW_MANAGER;
-        viewManager.showMessage("Ich befinde mich in shown");
-
     }
 
     @Override
@@ -92,11 +134,10 @@ public class CustomDialogHandler implements IDialogHandler {
         return true;
     }
 
-    public CustomDialogHandler() {
+    public SelectDiagramsToProveDialogHandler() {
         IDialog dia = new IDialog() {
             @Override
             public void setTitle(String s) {
-
             }
 
             @Override
