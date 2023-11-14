@@ -9,9 +9,8 @@ public class MyThread implements Runnable {
     ProjectManager pm = VPPlugin.PROJECT_MANAGER;
 
     public void run() {
-        pm.getProject().setName("Ich habe es im thread geändert");
         int var = 0;
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 12; i++) {
             viewManager.showMessage("Thread Hallo");
         }
     }
