@@ -5,11 +5,12 @@
 
     <property name="src" location="."/>
     <property name="build" location="build"/>
-    <property name="openapi" location="C:\Users\peixo\Documents\Entwicklung\VP_Plugin\openapi.jar"/>
+    <property name="openapi" location="lib/openapi.jar"/>
     <property name="vp" location="C:\Users\peixo\AppData\Roaming\VisualParadigm\plugins"/>
+    <property name="z3" location="lib/com.microsoft.z3.jar"/>
 
     <target name="build">
-        <javac srcdir="${src}" destdir="${build}" classpath="${openapi}" includeAntRuntime="no"/>
+        <javac srcdir="${src}" destdir="${build}" includes="${z3}" classpath="${openapi}" includeAntRuntime="no"/>
         <copy todir="${vp}/${ant.project.name}">
             <fileset dir="${build}"/>
         </copy>
