@@ -4,7 +4,7 @@
     </description>
 
     <property name="src" location="."/>
-    <property name="build" location="build"/>
+    <property name="build" value="build"/>
     <property name="openapi" location="lib/openapi.jar"/>
     <property name="vp" location="C:\Users\peixo\AppData\Roaming\VisualParadigm\plugins"/>
     <property name="z3" location="lib/com.microsoft.z3.jar"/>
@@ -13,8 +13,12 @@
         <fileset dir="${lib.dir}" includes="**/*.jar"/>
     </path>
 
+    <target name="init">
+        <delete dir="build"/>
+        <mkdir dir="${build}"/>
+    </target>
 
-    <target name="build">
+    <target name="build" depends="init">
         <javac srcdir="${src}" destdir="${build}" classpathref="classpath" includeAntRuntime="no"/>
         <copy todir="${vp}/${ant.project.name}">
             <fileset dir="${build}"/>
