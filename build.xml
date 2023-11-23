@@ -8,12 +8,18 @@
     <property name="openapi" location="lib/openapi.jar"/>
     <property name="vp" location="C:\Users\peixo\AppData\Roaming\VisualParadigm\plugins"/>
     <property name="z3" location="lib/com.microsoft.z3.jar"/>
+    <property name="lib.dir" value="lib"/>
+    <path id="classpath">
+        <fileset dir="${lib.dir}" includes="**/*.jar"/>
+    </path>
+
 
     <target name="build">
-        <javac srcdir="${src}" destdir="${build}" includes="${z3}" classpath="${openapi}" includeAntRuntime="no"/>
+        <javac srcdir="${src}" destdir="${build}" classpathref="classpath" includeAntRuntime="no"/>
         <copy todir="${vp}/${ant.project.name}">
             <fileset dir="${build}"/>
         </copy>
         <copy file="src/plugin.xml" todir="${vp}/${ant.project.name}"/>
+        <copy file="${lib.dir}/com.microsoft.z3.jar" todir="${vp}/${ant.project.name}"/>
     </target>
 </project>
