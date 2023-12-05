@@ -6,6 +6,7 @@ import com.vp.plugin.view.IDialog;
 import com.vp.plugin.view.IDialogHandler;
 import peixo.VPPlugin;
 import peixo.actions.SelectDiagramsToProveController;
+import peixo.datatypes.peixoDiagram;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,7 +17,7 @@ import java.util.List;
 public class SelectDiagramsToProveDialogHandler implements IDialogHandler {
     private IDialog _dialog;
 
-    private JList<ListItem> list;
+    private JList<peixoDiagram> list;
 
     public ViewManager viewManager = VPPlugin.VIEW_MANAGER;
 
@@ -42,7 +43,7 @@ public class SelectDiagramsToProveDialogHandler implements IDialogHandler {
         JLabel diagramImages = new JLabel();
         JPanel panelForList = new JPanel();
 
-        DefaultListModel<ListItem> DiagramDataModelForList = new DefaultListModel<>();
+        DefaultListModel<peixoDiagram> DiagramDataModelForList = new DefaultListModel<>();
         list = new JList<>();
         JScrollPane listScroller = new JScrollPane(list);
         JPanel panelForButtons = new JPanel();
@@ -60,21 +61,21 @@ public class SelectDiagramsToProveDialogHandler implements IDialogHandler {
 
         //Fill Jlist
         for (IDiagramUIModel m : diagramArrayList) {
-            DiagramDataModelForList.addElement(new ListItem(m.getId(), m.getName(), m) {
+            DiagramDataModelForList.addElement(new peixoDiagram(m.getId(), m.getName(), m) {
             });
+
         }
         // Add Listener
+        // Show Selected Diagram as small Icon
         list.getSelectionModel().addListSelectionListener(e -> {
-            ListItem item = list.getSelectedValue();
-            ImageIcon icon = new ImageIcon(SelectDiagramsToProveController.getDiagramIcons(item.DiagramId));
+            peixoDiagram item = list.getSelectedValue();
+            ImageIcon icon = new ImageIcon(SelectDiagramsToProveController.getDiagramIcons(item.getDiagramId()));
             diagramImages.setIcon(icon);
         });
-
+//         Get the Selected Diagrams to Prove
         okButton.addActionListener(e -> {
-            List<ListItem> item = list.getSelectedValuesList();
-            for (ListItem i : item) {
-                viewManager.showMessage(i.DiagramName);
-            }
+            List<peixoDiagram> item = list.getSelectedValuesList();
+            SelectDiagramsToProveController.checkReachabilityStateMachines(item);
         });
 
         cancelButton.addActionListener(e -> mainPanel.setVisible(false)); // Does not work as intended!
@@ -241,21 +242,5 @@ public class SelectDiagramsToProveDialogHandler implements IDialogHandler {
         }
     }
 
-    static class ListItem {
-        private String DiagramId;
-        private String DiagramName;
 
-        private IDiagramUIModel ModelObject;
-
-        ListItem(String id, String name, IDiagramUIModel m) {
-            this.DiagramId = id;
-            this.DiagramName = name;
-            this.ModelObject = m;
-        }
-
-        @Override
-        public String toString() {
-            return DiagramName;
-        }
-    }
 }

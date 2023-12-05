@@ -24,6 +24,6 @@
             <fileset dir="${build}"/>
         </copy>
         <copy file="src/plugin.xml" todir="${vp}/${ant.project.name}"/>
-        <copy file="${lib.dir}/com.microsoft.z3.jar" todir="${vp}/${ant.project.name}"/>
+        <copy file="${lib.dir}/com.microsoft.z3.jar" todir="${vp}/${ant.project.name}/lib/"/>
     </target>
 </project>

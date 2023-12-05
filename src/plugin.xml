@@ -4,12 +4,12 @@
         description="Fundament fuer ein erweiterbares Plugin"
         provider="Visual Paradigm"
         class="peixo.VPPlugin">
-<!--
+
      <runtime>
-        <library path="com.microsoft.z3.jar" relativePath="true"/>
+         <library path="lib/bin/com.microsoft.z3.jar" relativePath="true"/>
     </runtime>
--->
-<!--    Here is the Action Set-->
+
+    <!--    Here is the Action Set-->
     <actionSets>
         <actionSet id="peixo.actionset">
             <action
@@ -35,7 +35,7 @@
             <action
                     id="peixo.actions.SelectDiagramsToProve"
                     actionType="generalAction"
-                    label="Show Pane Test"
+                    label="Show Pane"
                     tooltip="proves the active Sequence Diagramm for completeness"
                     style="normal"
                     menuPath="Tools">
