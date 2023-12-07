@@ -87,21 +87,77 @@ public class SelectDiagramsToProveController implements VPActionController {
         return diagram.toDiagramElementArray();
     }
 
+    public void buildPaths(IDiagramElement[] diagramElements) {
+        ArrayList<ArrayList> pathsArrayList = new ArrayList<>();
+        ArrayList<IModelElement> pathInstance = new ArrayList<>();
+        ArrayList<IState2> statesArrayList = new ArrayList<>();
+        HashMap<IState2, IState2> linkedStates = new HashMap<>();
+
+        // Find Inital State
+        for (IDiagramElement e : diagramElements) {
+            if (e.getModelElement() instanceof ITransition2) {
+                ITransition2 trans = (ITransition2) e.getModelElement();
+                if (trans.getFrom() instanceof IInitialPseudoState) {
+                    IModelElement state = trans.getTo();
+                    pathInstance.add(state);
+                }
+            }
+
+            // Get All States
+            if (e.getModelElement() instanceof IState2) {
+                IState2 state = (IState2) e.getModelElement();
+                statesArrayList.add(state);
+            }
+        }
+
+        // Find all Linked states
+        for (IState2 s : statesArrayList) {
+            Iterator itor = s.fromRelationshipIterator();
+            while (itor.hasNext()) {
+                ITransition2 transition = (ITransition2) itor.next();
+                IState2 state = (IState2) transition.getTo();
+                linkedStates.put(state, s);
+            }
+        }
+
+
+        /*
+         Todo: Teste alle Transitions auf
+            getFrom() == linkedStates.getKey()
+            getTo() == linkedStates.getValue();
+            Wenn TRUE -> Füge diese Trans dem Weg hinzu
+        */
+
+        /*
+            Todo: Teste jeden State auf abzweigungen
+                wenn es abzweigungen gibt -> Erzeuge eine neue ArrayList und füge diese der großen ArrayList hinzu
+         */
+
+        for (Map.Entry<IState2, IState2> entry : linkedStates.entrySet()) {
+            viewManager.showMessage("Key: " + entry.getKey().getName() + " XXX " + "Value: " + entry.getValue().getName());
+        }
+    }
+
     public void checkReachabilityStateMachines(List<peixoDiagram> diagrams) {
         StringBuilder stringbuilder = new StringBuilder();
         SelectDiagramsToProveSolver solverLogic = new SelectDiagramsToProveSolver();
+        ArrayList<ArrayList> paths = new ArrayList<>();
 
         for (peixoDiagram d : diagrams) {
             if (d.getModelObject() instanceof IStateDiagramUIModel) {
                 IDiagramElement[] diagramElements = getDiagramElementsInArray(d.getModelObject());
+                buildPaths(diagramElements);
                 for (IDiagramElement e : diagramElements) {
-
                     if (e.getModelElement() instanceof ITransition2) {
                         ITransition2 trans = (ITransition2) e.getModelElement();
                         IConstraintElement constraint = trans.getGuard();
                         if (constraint != null) {
                             stringbuilder.append(constraint.getSpecification().getValueAsString()).append(" & ");
                         }
+                    }
+                    if (e.getModelElement() instanceof IState2) {
+                        IState2 state = (IState2) e.getModelElement();
+
                     }
                 }
             }
@@ -143,7 +199,7 @@ public class SelectDiagramsToProveController implements VPActionController {
 //        } }
 
 
-        viewManager.showMessage("Stringbuilder: " + stringbuilder.toString().trim().substring(0, stringbuilder.length() - 2));
+//        viewManager.showMessage("Stringbuilder: " + stringbuilder.toString().trim().substring(0, stringbuilder.length() - 2));
     }
 }
 
