@@ -1,7 +1,9 @@
 package peixo.solver;
 
+
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Solver;
 
 import java.util.*;
@@ -56,6 +58,9 @@ public class SelectDiagramsToProveSolver {
         if (sub.contains("=")) {
             clean = clean.replaceAll("[=]", " ");
         }
+        if (sub.contains("+")) {
+            clean = clean.replaceAll("[+]", " ");
+        }
         return clean;
     }
 
@@ -65,7 +70,7 @@ public class SelectDiagramsToProveSolver {
     }
 
     public String getAlphaNumericFromSubs(String sub) {
-        String clean = sub.replaceAll("[<,>,=,|]", " ");
+        String clean = sub.replaceAll("[<,>,=,|,+]", " ");
         return clean;
     }
 
@@ -103,7 +108,6 @@ public class SelectDiagramsToProveSolver {
             String constName = getConstFromSubs(s);
             String declareString = buildDeclareString(constName);
             String assertString = buildAssertString(constName, s);
-
             if (s.contains("<")) {
                 String s2 = declareString + assertString + ")";
                 BoolExpr f = ctx.parseSMTLIB2String(s2, null, null, null, null)[0];
@@ -116,7 +120,10 @@ public class SelectDiagramsToProveSolver {
                 String s2 = declareString + assertString + ")";
                 BoolExpr f = ctx.parseSMTLIB2String(s2, null, null, null, null)[0];
                 solver.add(f);
-//            }
+            } else if (s.contains("+")) {
+                String s2 = declareString + assertString + ")";
+                BoolExpr f = ctx.parseSMTLIB2String(s2, null, null, null, null)[0];
+                solver.add(f);
             }
         }
     }
@@ -156,6 +163,10 @@ public class SelectDiagramsToProveSolver {
             stringBuilder.append("(= ")
                     .append(sub.substring(0, sub.indexOf("=")).trim()).append(" ")
                     .append(sub.substring(sub.indexOf("=") + 1).trim()).append(")");
+        } else if (sub.contains("+")) {
+            stringBuilder.append("(+ ")
+                    .append(sub.substring(0, sub.indexOf("+")).trim()).append(" ")
+                    .append(sub.substring(sub.indexOf("+") + 1).trim()).append(")");
         }
 
         return stringBuilder.toString();
