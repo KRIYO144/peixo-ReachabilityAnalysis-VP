@@ -132,7 +132,6 @@ public class SelectDiagramsToProveSolver {
     public String buildAssertString(String constNames, String sub) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("(assert ");
-        System.out.println(sub);
         if (constNames.contains("|")) {
             stringBuilder.append("(or");
             ArrayList<String> orSubs = getORSubs(sub);

@@ -10,6 +10,9 @@ import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.diagram.IStateDiagramUIModel;
 import com.vp.plugin.model.*;
 import com.vp.plugin.view.IDialogHandler;
+import org.jgrapht.alg.shortestpath.AllDirectedPaths;
+import org.jgrapht.graph.DefaultDirectedGraph;
+import org.jgrapht.graph.DefaultEdge;
 import peixo.VPPlugin;
 import peixo.dialogs.SelectDiagramsToProveDialogHandler;
 import peixo.datatypes.peixoDiagram;
@@ -18,6 +21,9 @@ import peixo.solver.SelectDiagramsToProveSolver;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import org.jgrapht.*;
 
 public class SelectDiagramsToProveController implements VPActionController {
     ViewManager viewManager = VPPlugin.VIEW_MANAGER;
@@ -87,39 +93,60 @@ public class SelectDiagramsToProveController implements VPActionController {
         return diagram.toDiagramElementArray();
     }
 
-    public void buildPaths(IDiagramElement[] diagramElements) {
-        ArrayList<ArrayList> pathsArrayList = new ArrayList<>();
-        ArrayList<IModelElement> pathInstance = new ArrayList<>();
-        ArrayList<IState2> statesArrayList = new ArrayList<>();
-        HashMap<IState2, IState2> linkedStates = new HashMap<>();
+    public ArrayList<String> buildPaths(IDiagramElement[] diagramElements) {
+        ArrayList<LinkedList<String>> pathsArrayList = new ArrayList<>();
+        ArrayList<LinkedList<String>> buildPaths = new ArrayList<>();
+        ArrayList<String> endingNodes = new ArrayList<>();
+        ArrayList<IState2> allStates = new ArrayList<>();
+        ArrayList<ITransition2> allTrans = new ArrayList<>();
+        String initState = "";
+        Graph<String, DefaultEdge> g = new DefaultDirectedGraph<>(DefaultEdge.class);
 
-        // Find Inital State
+        // Fill Graph
+
         for (IDiagramElement e : diagramElements) {
-            if (e.getModelElement() instanceof ITransition2) {
-                ITransition2 trans = (ITransition2) e.getModelElement();
-                if (trans.getFrom() instanceof IInitialPseudoState) {
-                    IModelElement state = trans.getTo();
-                    pathInstance.add(state);
-                }
-            }
-
             // Get All States
             if (e.getModelElement() instanceof IState2) {
                 IState2 state = (IState2) e.getModelElement();
-                statesArrayList.add(state);
+                allStates.add(state);
+                g.addVertex(state.getName());
+            }
+            // Find Inital State
+            if (e.getModelElement() instanceof ITransition2) {
+                ITransition2 trans = (ITransition2) e.getModelElement();
+                allTrans.add(trans);
+                if (trans.getFrom() instanceof IInitialPseudoState) {
+                    IModelElement state = trans.getTo();
+                    initState = state.getName();
+                }
             }
         }
-
         // Find all Linked states
-        for (IState2 s : statesArrayList) {
+        for (IState2 s : allStates) {
             Iterator itor = s.fromRelationshipIterator();
             while (itor.hasNext()) {
+                LinkedList<String> helperList = new LinkedList<>();
                 ITransition2 transition = (ITransition2) itor.next();
                 IState2 state = (IState2) transition.getTo();
-                linkedStates.put(state, s);
+                if (!Objects.equals(s.getId(), state.getId())) {
+                    helperList.add(s.getName());
+                    helperList.add(state.getName());
+                    g.addEdge(s.getName(), state.getName());
+                    pathsArrayList.add(helperList);
+                }
             }
         }
-
+        // Build Paths
+        // Find all Ending Vertices
+        Set<String> verticesWithoutSucc = g.vertexSet().stream().filter(v -> !Graphs.vertexHasSuccessors(g, v)).collect(Collectors.toSet());
+        // Get all Paths from InitState to all Ending Vertices
+        AllDirectedPaths<String, DefaultEdge> allDirectedPaths = new AllDirectedPaths<>(g);
+        ArrayList<String> paths = new ArrayList<>();
+        for (String endingState : verticesWithoutSucc) {
+            String path = allDirectedPaths.getAllPaths(initState, endingState, false, 20).toString();
+            paths.add(path);
+        }
+        return paths;
 
         /*
          Todo: Teste alle Transitions auf
@@ -128,25 +155,17 @@ public class SelectDiagramsToProveController implements VPActionController {
             Wenn TRUE -> Füge diese Trans dem Weg hinzu
         */
 
-        /*
-            Todo: Teste jeden State auf abzweigungen
-                wenn es abzweigungen gibt -> Erzeuge eine neue ArrayList und füge diese der großen ArrayList hinzu
-         */
-
-        for (Map.Entry<IState2, IState2> entry : linkedStates.entrySet()) {
-            viewManager.showMessage("Key: " + entry.getKey().getName() + " XXX " + "Value: " + entry.getValue().getName());
-        }
     }
 
     public void checkReachabilityStateMachines(List<peixoDiagram> diagrams) {
         StringBuilder stringbuilder = new StringBuilder();
         SelectDiagramsToProveSolver solverLogic = new SelectDiagramsToProveSolver();
-        ArrayList<ArrayList> paths = new ArrayList<>();
+        ArrayList<String> paths = new ArrayList<>();
 
         for (peixoDiagram d : diagrams) {
             if (d.getModelObject() instanceof IStateDiagramUIModel) {
                 IDiagramElement[] diagramElements = getDiagramElementsInArray(d.getModelObject());
-                buildPaths(diagramElements);
+                paths = buildPaths(diagramElements);
                 for (IDiagramElement e : diagramElements) {
                     if (e.getModelElement() instanceof ITransition2) {
                         ITransition2 trans = (ITransition2) e.getModelElement();
@@ -157,10 +176,10 @@ public class SelectDiagramsToProveController implements VPActionController {
                     }
                     if (e.getModelElement() instanceof IState2) {
                         IState2 state = (IState2) e.getModelElement();
-
                     }
                 }
             }
+            viewManager.showMessage(stringbuilder.toString());
             try {
                 Solver solver = solverLogic.buildSolverLogic(stringbuilder.toString());
                 switch (solver.check()) {

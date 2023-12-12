@@ -6,7 +6,10 @@
         class="peixo.VPPlugin">
 
      <runtime>
-         <library path="lib/bin/com.microsoft.z3.jar" relativePath="true"/>
+         <library path="lib/com.microsoft.z3.jar" relativePath="true"/>
+         <library path="lib/apfloat-1.10.1.jar" relativePath="true"/>
+         <library path="lib/jgrapht-core-1.5.2.jar" relativePath="true"/>
+         <library path="lib/jheaps-0.14.jar" relativePath="true"/>
     </runtime>
 
     <!--    Here is the Action Set-->
