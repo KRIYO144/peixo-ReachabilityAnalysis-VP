@@ -1,7 +1,7 @@
 <plugin
         id="peixo"
-        name="Proof"
-        description="Fundament fuer ein erweiterbares Plugin"
+        name="peixo Reachability Analysis"
+        description="Reachability Analysis for UML Diagrams"
         provider="Visual Paradigm"
         class="peixo.VPPlugin">
 
@@ -26,19 +26,9 @@
                         class="peixo.actions.HotReloadController"/>
             </action>
             <action
-                id="peixo.actions.ProofForSeq"
-                actionType="generalAction"
-                label="Prove Diagramms"
-                tooltip="proves the active Sequence Diagramm for completeness"
-                style="normal"
-                menuPath="Tools">
-                <actionController
-                    class="peixo.actions.ProofForSeqController"/>
-            </action>
-            <action
                     id="peixo.actions.SelectDiagramsToProve"
                     actionType="generalAction"
-                    label="Show Pane"
+                    label="Check Reachability"
                     tooltip="proves the active Sequence Diagramm for completeness"
                     style="normal"
                     menuPath="Tools">

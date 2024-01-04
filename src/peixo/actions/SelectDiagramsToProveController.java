@@ -94,51 +94,86 @@ public class SelectDiagramsToProveController implements VPActionController {
     }
 
 
-    public void checkReachabilityStateMachines(List<peixoDiagram> diagrams) {
-        StringBuilder stringbuilder = new StringBuilder();
+    public void checkReachability(List<peixoDiagram> diagrams) {
+
         SelectDiagramsToProveSolver solverLogic = new SelectDiagramsToProveSolver();
         ArrayList<ArrayList<String>> paths = new ArrayList<>();
+        ArrayList<String> builtPaths = new ArrayList<>();
+
 
         for (peixoDiagram d : diagrams) {
             if (d.getModelObject() instanceof IStateDiagramUIModel) {
+                IDiagramUIModel activeDiagram = d.getModelObject();
                 IDiagramElement[] diagramElements = getDiagramElementsInArray(d.getModelObject());
-                paths = buildPaths(diagramElements);
+                paths = buildPaths(diagramElements, activeDiagram.getId());
+                for (ArrayList<String> selectedBuiltPath : paths) {
+                    StringBuilder stringbuilder = new StringBuilder();
+                    int counter = 0;
+                    for (String path : selectedBuiltPath) {
+                        String firstStateActivities = path.substring(0, path.indexOf("[") - 1).replaceAll("\\(", "");
+                        String transitionConstraint = path.substring(path.indexOf("[") + 1, path.indexOf("]"));
+                        String lastStateActivities = path.substring(path.indexOf("]") + 2).replaceAll("\\)", "");
+                        String[] splitFirstStateActivities = firstStateActivities.trim().split("#");
+                        String[] splitLastStateActivities = lastStateActivities.trim().split("#");
+                        // Todo: Ändere die Reihenfolge der Exit Activity
+                        // Fill String with FirstState Activities
+                        if (counter == 0) {
+                            for (String s : splitFirstStateActivities) {
+                                if (!s.isBlank()) {
+                                    stringbuilder.append(s).append(" & ");
+                                }
+                            }
+                            counter++;
+                        }
+                        // Fill String with Transition Constraint
+                        if (!transitionConstraint.isBlank()) {
+                            stringbuilder.append(transitionConstraint).append(" & ");
 
-
-                for (IDiagramElement e : diagramElements) {
-                    if (e.getModelElement() instanceof ITransition2) {
-                        ITransition2 trans = (ITransition2) e.getModelElement();
-                        IConstraintElement constraint = trans.getGuard();
-                        if (constraint != null) {
-                            stringbuilder.append(constraint.getSpecification().getValueAsString()).append(" & ");
+                        } else if (transitionConstraint.isBlank()) {
+                            stringbuilder.append(" ");
+                        }
+                        // Fill String with LastState Activities
+                        for (String s : splitLastStateActivities) {
+                            if (!s.isBlank()) {
+                                stringbuilder.append(s).append(" & ");
+                            }
                         }
                     }
-                    if (e.getModelElement() instanceof IState2) {
-                        IState2 state = (IState2) e.getModelElement();
+                    builtPaths.add(stringbuilder.toString().substring(0, stringbuilder.lastIndexOf("&")));
+                }
+                // ToDo: Aktuell geht alles außer State < State2
+                int unsatisSolvers = 0;
+                for (String s : builtPaths) {
+                    try {
+                        Solver solver = solverLogic.buildSolverLogic(s);
+                        switch (solver.check()) {
+                            case SATISFIABLE:
+                                viewManager.showMessage("Solver is Satisfiable: " + Arrays.toString(solver.getAssertions()));
+                                viewManager.showMessage("Hier ist das Model: " + solver.getModel().toString());
+                                break;
+                            case UNSATISFIABLE:
+                                unsatisSolvers++;
+                                viewManager.showMessage("Solver is Unsatisfiable: " + Arrays.toString(solver.getAssertions()));
+                                break;
+                            case UNKNOWN:
+                                viewManager.showMessage("Solver status is Unknown: " + Arrays.toString(solver.getAssertions()));
+                                break;
+                        }
+                    } catch (Z3Exception | IndexOutOfBoundsException exception) {
+                        unsatisSolvers++;
+                        viewManager.showMessage(exception.getMessage());
                     }
                 }
-            }
-
-            try {
-                Solver solver = solverLogic.buildSolverLogic(stringbuilder.toString());
-                switch (solver.check()) {
-                    case SATISFIABLE:
-                        viewManager.showMessage("Solver is Satisfiable: " + Arrays.toString(solver.getAssertions()));
-                        break;
-                    case UNSATISFIABLE:
-                        viewManager.showMessage("Solver is Unsatisfiable: " + Arrays.toString(solver.getAssertions()));
-                        break;
-                    case UNKNOWN:
-                        viewManager.showMessage("Solver status is Unknown: " + Arrays.toString(solver.getAssertions()));
-                        break;
+                if (unsatisSolvers != 0) {
+                    viewManager.showMessage("Einer der Pfade ist nicht erreichbar.");
+                } else if (unsatisSolvers == 0) {
+                    viewManager.showMessage("Alle Pfade sind erreichbar.");
                 }
-            } catch (Z3Exception | IndexOutOfBoundsException exception) {
-                viewManager.showMessage(exception.getMessage());
             }
         }
     }
 
-    public ArrayList<ArrayList<String>> buildPaths(IDiagramElement[] diagramElements) {
+    public ArrayList<ArrayList<String>> buildPaths(IDiagramElement[] diagramElements, String activeDiagram) {
         ArrayList<LinkedList<String>> pathsArrayList = new ArrayList<>();
         ArrayList<IState2> allStates = new ArrayList<>();
         ArrayList<ITransition2> allTrans = new ArrayList<>();
@@ -153,7 +188,12 @@ public class SelectDiagramsToProveController implements VPActionController {
             if (e.getModelElement() instanceof IState2) {
                 IState2 state = (IState2) e.getModelElement();
                 allStates.add(state);
-                g.addVertex(state.getName());
+                g.addVertex(state.getId());
+            }
+            if (e.getModelElement() instanceof IChoice) {
+                IChoice choice = (IChoice) e.getModelElement();
+//                allStates.add(choice);
+                g.addVertex(choice.getId());
             }
             // Find Inital State
             if (e.getModelElement() instanceof ITransition2) {
@@ -161,7 +201,7 @@ public class SelectDiagramsToProveController implements VPActionController {
                 allTrans.add(trans);
                 if (trans.getFrom() instanceof IInitialPseudoState) {
                     IModelElement state = trans.getTo();
-                    initState = state.getName();
+                    initState = state.getId();
                 }
             }
         }
@@ -173,9 +213,9 @@ public class SelectDiagramsToProveController implements VPActionController {
                 ITransition2 transition = (ITransition2) itor.next();
                 IState2 state = (IState2) transition.getTo();
                 if (!Objects.equals(s.getId(), state.getId())) {
-                    helperList.add(s.getName());
-                    helperList.add(state.getName());
-                    g.addEdge(s.getName(), state.getName());
+                    helperList.add(s.getId());
+                    helperList.add(state.getId());
+                    g.addEdge(s.getId(), state.getId());
                     pathsArrayList.add(helperList);
                 }
             }
@@ -207,18 +247,19 @@ public class SelectDiagramsToProveController implements VPActionController {
                     stringBuilder.append("(").append(firstState).append(" ");
                     // Get the Transition from State to State
                     for (ITransition2 trans : allTrans) {
-                        String from = trans.getFrom().getName();
-                        String to = trans.getTo().getName();
+                        String from = trans.getFrom().getId();
+                        String to = trans.getTo().getId();
                         if (from.equals(firstState) && to.equals(lastState)) {
                             if (trans.getGuard() != null) {
                                 stringBuilder.append("[").append(trans.getGuard().getSpecification().getValueAsString()).append("]").append(" ");
                             }
                             // If the Transition doenst have a guard
                             else if (trans.getGuard() == null) {
-                                stringBuilder.append(" ");
+                                stringBuilder.append("[ ] ");
                             }
                         }
                     }
+
                     stringBuilder.append(lastState).append(")");
                     pathsWithTransitions.add(stringBuilder.toString());
                 }
@@ -228,40 +269,76 @@ public class SelectDiagramsToProveController implements VPActionController {
         // Todo: Take all paths of allPathsWithTransitions and add the entry, do, exit of the states and put it in another list
         //  Change the States from GetName() to GetId()
         for (ArrayList<String> pathsWithTrans : allPathsWithTransitions) {
+            ArrayList<String> helperlist = new ArrayList<>();
             for (String link : pathsWithTrans) {
                 StringBuilder stringBuilder = new StringBuilder();
-                String firstState = link.substring(1, link.indexOf("["));
-                String lastState = link.substring(link.indexOf("]") + 1, link.indexOf(")"));
-                String constraintForTrans = link.substring(link.indexOf("["), link.indexOf("]"));
-                IState2 firstStateObject = (IState2) pm.getProject().getDiagramById(firstState);
-                IState2 lastStateObject = (IState2) pm.getProject().getDiagramById(lastState);
-                stringBuilder.append("(");
-                if (firstStateObject.getEntry().getBody() != null) {
-                    stringBuilder.append(firstStateObject.getEntry().getBody()).append(" ");
-                }
-                if (firstStateObject.getDoActivity().getBody() != null) {
-                    stringBuilder.append(firstStateObject.getDoActivity().getBody()).append(" ");
-                }
-                if (firstStateObject.getExit().getBody() != null) {
-                    stringBuilder.append(firstStateObject.getExit().getBody()).append(" ");
-                }
-                stringBuilder.append(constraintForTrans);
+                String firstState = link.substring(1, link.indexOf("[") - 1);
+                String lastState = link.substring(link.indexOf("]") + 2, link.indexOf(")"));
+                String constraintForTrans = link.substring(link.indexOf("["), link.indexOf("]") + 1);
+                ArrayList<IState2> objects = new ArrayList<>();
+                IDiagramElement[] diagramElementArray = pm.getProject().getDiagramById(activeDiagram).toDiagramElementArray();
 
-                if (lastStateObject.getEntry().getBody() != null) {
-                    stringBuilder.append(lastStateObject.getEntry().getBody()).append(" ");
+                for (IDiagramElement el2 : diagramElementArray) {
+                    if (el2.getModelElement() instanceof IState2) {
+                        IState2 state = (IState2) el2.getModelElement();
+                        if (Objects.equals(state.getId(), firstState)) {
+                            objects.add(state);
+
+                        }
+                    }
                 }
-                if (lastStateObject.getDoActivity().getBody() != null) {
-                    stringBuilder.append(lastStateObject.getDoActivity().getBody()).append(" ");
+                for (IDiagramElement el2 : diagramElementArray) {
+                    if (el2.getModelElement() instanceof IState2) {
+                        IState2 state = (IState2) el2.getModelElement();
+                        if (Objects.equals(state.getId(), lastState)) {
+                            objects.add(state);
+                        }
+                    }
                 }
-                if (lastStateObject.getExit().getBody() != null) {
-                    stringBuilder.append(lastStateObject.getExit().getBody()).append(" ");
+
+//                IState2 lastStateObject = (IState2) pm.getProject().getDiagramElementById(lastState).getModelElement();
+                stringBuilder.append("(");
+                if (objects.get(0).getEntry() != null) {
+                    stringBuilder.append("#").append(objects.get(0).getEntry().getBody()).append(" ");
+                } else if (objects.get(0).getEntry() == null) {
+                    stringBuilder.append(" ");
                 }
+                if (objects.get(0).getDoActivity() != null) {
+                    stringBuilder.append("#").append(objects.get(0).getDoActivity().getBody()).append(" ");
+                } else if (objects.get(0).getEntry() == null) {
+                    stringBuilder.append(" ");
+                }
+                if (objects.get(0).getExit() != null) {
+                    stringBuilder.append("#").append(objects.get(0).getExit().getBody()).append(" ");
+                } else if (objects.get(0).getEntry() == null) {
+                    stringBuilder.append(" ");
+                }
+                stringBuilder.append(constraintForTrans).append(" ");
+
+
+                if (objects.get(1).getEntry() != null) {
+                    stringBuilder.append("#").append(objects.get(1).getEntry().getBody()).append(" ");
+                } else if (objects.get(0).getEntry() == null) {
+                    stringBuilder.append("#").append(" ");
+                }
+                if (objects.get(1).getDoActivity() != null) {
+                    stringBuilder.append("#").append(objects.get(1).getDoActivity().getBody()).append(" ");
+                } else if (objects.get(0).getEntry() == null) {
+                    stringBuilder.append(" ");
+                }
+                if (objects.get(1).getExit() != null) {
+                    stringBuilder.append("#").append(objects.get(1).getExit().getBody()).append(" ");
+                } else if (objects.get(0).getEntry() == null) {
+                    stringBuilder.append(" ");
+                }
+                stringBuilder.append(")");
+                helperlist.add(stringBuilder.toString());
                 // Todo: Make a list of this and add it to big global list
                 //   debug this also
             }
+            allPathsWithTransitionsAndStateActions.add(helperlist);
         }
-
-        return allPathsWithTransitions;
+        return allPathsWithTransitionsAndStateActions;
 
     }
 }

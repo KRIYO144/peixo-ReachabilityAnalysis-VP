@@ -75,7 +75,7 @@ public class SelectDiagramsToProveDialogHandler implements IDialogHandler {
 //         Get the Selected Diagrams to Prove
         okButton.addActionListener(e -> {
             List<peixoDiagram> item = list.getSelectedValuesList();
-            SelectDiagramsToProveController.checkReachabilityStateMachines(item);
+            SelectDiagramsToProveController.checkReachability(item);
         });
 
         cancelButton.addActionListener(e -> mainPanel.setVisible(false)); // Does not work as intended!
