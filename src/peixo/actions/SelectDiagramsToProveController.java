@@ -32,7 +32,12 @@ public class SelectDiagramsToProveController implements VPActionController {
 
 //    private Solver Solver;
 
-
+    /**
+     * The Method that gets called when the Class SelectDiagramsToProveController is
+     * instantiated
+     *
+     * @param vpAction an Action from Visual Paradigm
+     */
     @Override
     public void performAction(VPAction vpAction) {
         try {
@@ -41,21 +46,6 @@ public class SelectDiagramsToProveController implements VPActionController {
         } catch (Exception e) {
             viewManager.showMessage("ShowDialog kaputt");
         }
-//        IDiagramUIModel diagram = ApplicationManager.instance().getDiagramManager().getActiveDiagram();
-//        if (diagram instanceof IStateDiagramUIModel) {
-//            IDiagramElement[] diagramElements = diagram.toDiagramElementArray();
-//
-//            for (IDiagramElement e : diagramElements) {
-//                if (e.getModelElement() instanceof ITransition2) {
-//                    viewManager.showMessage("Ich bin in Transition");
-//                    ITransition2 trans = (ITransition2) e.getModelElement();
-//                    IConstraintElement guard = trans.getGuard();
-//                    viewManager.showMessage("Der Guard ist: " + guard.getSpecification().getValueAsString());
-//                    viewManager.showMessage("Die Trans ist: " + trans.getName());
-//                }
-//                viewManager.showMessage("Name vom Element: " + e.getModelElement().getName() + " vom Typ: " + e.getModelElement().getModelType());
-//            }
-//        }
     }
 
     @Override
@@ -63,6 +53,11 @@ public class SelectDiagramsToProveController implements VPActionController {
 
     }
 
+    /**
+     * This Method returns all Diagrams within the active Project as a ArrayList<IDiagramUIModel>
+     *
+     * @return a ArrayList<IDiagramUIModel> with all the Diagrams of the active Project
+     *  */
     public ArrayList<IDiagramUIModel> getDiagrams() {
         ProjectManager projectManager = VPPlugin.PROJECT_MANAGER;
         Iterator diagramIter = projectManager.getProject().diagramIterator();
@@ -76,12 +71,17 @@ public class SelectDiagramsToProveController implements VPActionController {
         return diagramList;
     }
 
+    /**
+     * This Helper-method exports the specified Diagram as an Image
+     *
+     * @param id The ID of the Diagram for which the Image is exported
+     * @return an Image of the specified Diagram
+     *  */
     public Image getDiagramIcons(String id) {
         ExportDiagramAsImageOption option = new ExportDiagramAsImageOption(ExportDiagramAsImageOption.IMAGE_TYPE_PNG);
         option.setHeight(1000);
         option.setWidth(1000);
         option.setMaxSize(new Dimension(800, 600));
-//        option.setScale(2.0F);
         ProjectManager projectManager = VPPlugin.PROJECT_MANAGER;
         DiagramManager diagramManager = VPPlugin.DIAGRAM_MANAGER;
         IDiagramUIModel activeDiagram = projectManager.getProject().getDiagramById(id);
@@ -89,11 +89,36 @@ public class SelectDiagramsToProveController implements VPActionController {
         return ApplicationManager.instance().getModelConvertionManager().exportDiagramAsImage(activeDiagram, option);
     }
 
+    /**
+     * This Helper-method returns an Array with the Model elements of the specified Diagram
+     *
+     *
+     * @param diagram The Object of the specified Diagram
+     * @return IDiagramElement[] Array with Diagram elements
+     *  */
     public IDiagramElement[] getDiagramElementsInArray(IDiagramUIModel diagram) {
         return diagram.toDiagramElementArray();
     }
 
-
+    /**
+     * This is the main logic of the Class SelectDiagramsToProveController.
+     * <p>
+     *     This Method gets called from the GUI with a List of type peixoDiagram.
+     * <p>
+     *     For every IStateDiagramUIModel in the List all directed Paths are found.
+     * <p>
+     *     For every directed Path a String with all Activities and Guards gets built.
+     *     The Sequence of the Activities and Guards are like the UML Standard.
+     *  <p>
+     *      The Method buildSolverLogic gets called for every single Path.
+     *      If one of the Paths evaluates to UNSATISFIABLE not every Path is reachable.
+     *
+     *
+     * @param diagrams This List of type peixoDiagram
+     * @throws Z3Exception This gets thrown if something in class SelectDiagramsToProveSolver is wrong with the Solver
+     * @throws IndexOutOfBoundsException This gets thrown if something in class SelectDiagramsToProveSolver is wrong with the preparation of the Strings
+     *
+     *  */
     public void checkReachability(List<peixoDiagram> diagrams) {
 
         SelectDiagramsToProveSolver solverLogic = new SelectDiagramsToProveSolver();
@@ -188,6 +213,17 @@ public class SelectDiagramsToProveController implements VPActionController {
         }
     }
 
+    /**
+     * This Method gets called by Method checkReachability().
+     * <p>
+     *     Here the Paths are found and built with the Library JGraphT
+     *
+     * @param diagramElements all DiagramElements of a specified Diagram
+     * @param activeDiagram the ID of the specified Diagram
+     * @return ArrayList<ArrayList>String>> returns a ArrayList of all possible directed paths, the directed Paths are also in a ArrayList
+     *
+     *
+     *  */
     public ArrayList<ArrayList<String>> buildPaths(IDiagramElement[] diagramElements, String activeDiagram) {
         ArrayList<LinkedList<String>> pathsArrayList = new ArrayList<>();
         ArrayList<IState2> allStates = new ArrayList<>();
@@ -404,44 +440,6 @@ public class SelectDiagramsToProveController implements VPActionController {
                 }
                 stringBuilder.append(")");
 
-//                IState2 lastStateObject = (IState2) pm.getProject().getDiagramElementById(lastState).getModelElement();
-//                    stringBuilder.append("(");
-//                if(!objects.isEmpty()) {
-//                    if (objects.get(0).getEntry() != null) {
-//                        stringBuilder.append("#").append(objects.get(0).getEntry().getBody()).append(" ");
-//                    } else if (objects.get(0).getEntry() == null) {
-//                        stringBuilder.append(" ");
-//                    }
-//                    if (objects.get(0).getDoActivity() != null) {
-//                        stringBuilder.append("#").append(objects.get(0).getDoActivity().getBody()).append(" ");
-//                    } else if (objects.get(0).getDoActivity() == null) {
-//                        stringBuilder.append(" ");
-//                    }
-//                    if (objects.get(0).getExit() != null) {
-//                        stringBuilder.append("#").append(objects.get(0).getExit().getBody()).append(" ");
-//                    } else if (objects.get(0).getExit() == null) {
-//                        stringBuilder.append(" ");
-//                    }
-//                    stringBuilder.append(guardForTrans).append(" ");
-//
-//
-//                    if (objects.get(1).getEntry() != null) {
-//                        stringBuilder.append("#").append(objects.get(1).getEntry().getBody()).append(" ");
-//                    } else if (objects.get(0).getEntry() == null) {
-//                        stringBuilder.append("#").append(" ");
-//                    }
-//                    if (objects.get(1).getDoActivity() != null) {
-//                        stringBuilder.append("#").append(objects.get(1).getDoActivity().getBody()).append(" ");
-//                    } else if (objects.get(0).getEntry() == null) {
-//                        stringBuilder.append(" ");
-//                    }
-//                    if (objects.get(1).getExit() != null) {
-//                        stringBuilder.append("#").append(objects.get(1).getExit().getBody()).append(" ");
-//                    } else if (objects.get(0).getEntry() == null) {
-//                        stringBuilder.append(" ");
-//                    }
-//                }
-//                stringBuilder.append(")");
                 helperlist.add(stringBuilder.toString());
             }
             allPathsWithTransitionsAndStateActions.add(helperlist);
@@ -450,28 +448,3 @@ public class SelectDiagramsToProveController implements VPActionController {
 
     }
 }
-
-//                        viewManager.showMessage("Es ist ein Constraint mit dem Value: " + constraint.getSpecification().getValueAsString() + "aus dem Diagram: " + d.getDiagramName());
-//                    } else if (e.getModelElement() instanceof IState2) {
-//                        IState2 state = (IState2) e.getModelElement();
-////                        viewManager.showMessage("Es ist ein Zustand mit dem Namen: " + state.getName());
-//                    }
-//                }
-//
-//            for (IDiagramElement e : diagramElements) {
-//                if (e.getModelElement() instanceof ITransition2) {
-//                    viewManager.showMessage("Ich bin in Transition");
-//                    ITransition2 trans = (ITransition2) e.getModelElement();
-//                    IConstraintElement guard = trans.getGuard();
-//                    viewManager.showMessage("Der Guard ist: " + guard.getSpecification().getValueAsString());
-//                    viewManager.showMessage("Die Trans ist: " + trans.getName());
-//                }
-//                viewManager.showMessage("Name vom Element: " + e.getModelElement().getName() + " vom Typ: " + e.getModelElement().getModelType());
-//            }
-//        } }
-
-
-//        viewManager.showMessage("Stringbuilder: " + stringbuilder.toString().trim().substring(0, stringbuilder.length() - 2));
-
-
-
