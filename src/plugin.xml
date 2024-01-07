@@ -1,15 +1,18 @@
 <plugin
         id="peixo"
-        name="Proof"
-        description="Fundament fuer ein erweiterbares Plugin"
+        name="peixo Reachability Analysis"
+        description="Reachability Analysis for UML Diagrams"
         provider="Visual Paradigm"
         class="peixo.VPPlugin">
-<!--
+
      <runtime>
-        <library path="com.microsoft.z3.jar" relativePath="true"/>
+         <library path="lib/com.microsoft.z3.jar" relativePath="true"/>
+         <library path="lib/apfloat-1.10.1.jar" relativePath="true"/>
+         <library path="lib/jgrapht-core-1.5.2.jar" relativePath="true"/>
+         <library path="lib/jheaps-0.14.jar" relativePath="true"/>
     </runtime>
--->
-<!--    Here is the Action Set-->
+
+    <!--    Here is the Action Set-->
     <actionSets>
         <actionSet id="peixo.actionset">
             <action
@@ -23,19 +26,9 @@
                         class="peixo.actions.HotReloadController"/>
             </action>
             <action
-                id="peixo.actions.ProofForSeq"
-                actionType="generalAction"
-                label="Prove Diagramms"
-                tooltip="proves the active Sequence Diagramm for completeness"
-                style="normal"
-                menuPath="Tools">
-                <actionController
-                    class="peixo.actions.ProofForSeqController"/>
-            </action>
-            <action
                     id="peixo.actions.SelectDiagramsToProve"
                     actionType="generalAction"
-                    label="Show Pane Test"
+                    label="Check Reachability"
                     tooltip="proves the active Sequence Diagramm for completeness"
                     style="normal"
                     menuPath="Tools">
