@@ -71,96 +71,153 @@ public class SelectDiagramsToProveSolver {
             String value = entry.getValue();
             String constName = getConstFromSubs(entry.getValue());
             String operators = getOperatorFromSubs(entry.getValue());
+            String alphaNumeric = getAlphaNumericFromSubs(entry.getValue());
+            if (value.contains("+") | value.contains("-")) {
+                map.put(key, "# " + entry.getValue());
+            }
             for (Map.Entry<Integer, String> comparedEntry : map.entrySet()) {
                 StringBuilder stringBuilder = new StringBuilder();
                 int comparedKey = comparedEntry.getKey();
                 if (key < comparedEntry.getKey()) {
                     String comparedConstNames = getConstFromSubs(comparedEntry.getValue());
                     if (comparedConstNames.contains(constName)) {
-                        if (comparedEntry.getValue().contains("++") | comparedEntry.getValue().contains("--")) {
-                            map.put(key, "# " + entry.getValue());
-                            if (comparedEntry.getValue().contains(",")) {
-                                String[] split = comparedEntry.getValue().split(",");
-                                for (int i = 0; i < split.length; i++) {
-                                    if (split[i].equals(constName)) {
-                                        stringBuilder.append("# ");
-                                        stringBuilder.append(split[i]);
-                                        for (int z = 0; z < counter; z++) {
-                                            stringBuilder.append("~");
-                                            counter++;
+                        if (value.contains("+") | value.contains("-")) {
+                            if (comparedEntry.getValue().contains("++") | comparedEntry.getValue().contains("--")) {
+                                if (value.contains("+") | value.contains("-")) {
+                                    map.put(key, "# " + entry.getValue());
+                                }
+                                if (comparedEntry.getValue().contains(",")) {
+                                    String[] split = comparedEntry.getValue().split(",");
+                                    for (int i = 0; i < split.length; i++) {
+                                        if (split[i].equals(constName)) {
+                                            stringBuilder.append("# ");
+                                            stringBuilder.append(split[i]);
+                                            for (int z = 0; z < counter; z++) {
+                                                stringBuilder.append("~");
+                                                counter++;
+                                            }
+                                        } else if (!split[i].equals(constName)) {
+                                            stringBuilder.append(split[i]);
                                         }
-                                    } else if (!split[i].equals(constName)) {
-                                        stringBuilder.append(split[i]);
                                     }
-                                }
-                                map.put(comparedKey, stringBuilder.toString());
-                            } else {
-                                stringBuilder.append("# ");
-                                stringBuilder.append(constName.replaceAll("[\\[,\\]]", ""));
-                                for (int z = 0; z < counter; z++) {
-                                    stringBuilder.append("~");
-                                }
-                                stringBuilder.append(operators);
+                                    map.put(comparedKey, stringBuilder.toString());
+                                } else {
+                                    String comparedOperators = getOperatorFromSubs(comparedEntry.getValue());
+                                    stringBuilder.append("# ");
+                                    stringBuilder.append(constName.replaceAll("[\\[,\\]]", ""));
+                                    for (int z = 0; z < counter; z++) {
+                                        stringBuilder.append("~");
+                                    }
+                                    stringBuilder.append(comparedOperators);
 
-                                map.put(comparedKey, stringBuilder.toString());
-                            }
-                        } else if (!comparedEntry.getValue().contains("++") & !comparedEntry.getValue().contains("--")) {
+                                    map.put(comparedKey, stringBuilder.toString());
+                                }
 
-                            if (comparedEntry.getValue().contains(",")) {
-                                String[] split = comparedEntry.getValue().split(",");
-                                for (int i = 0; i < split.length; i++) {
-                                    if (split[i].equals(constName)) {
-                                        stringBuilder.append(split[i]);
-                                        for (int z = 0; z < counter; z++) {
-                                            stringBuilder.append("~");
-                                            counter++;
+                            } else if (comparedEntry.getValue().contains("+") | comparedEntry.getValue().contains("-")) {
+                                if (value.contains("+") | value.contains("-")) {
+                                    map.put(key, "# " + entry.getValue());
+                                }
+                                if (comparedEntry.getValue().contains(",")) {
+                                    String[] split = comparedEntry.getValue().split(",");
+                                    for (int i = 0; i < split.length; i++) {
+                                        if (split[i].equals(constName)) {
+                                            stringBuilder.append("# [");
+                                            stringBuilder.append(split[i]);
+                                            for (int z = 0; z < counter; z++) {
+                                                stringBuilder.append("~");
+                                                counter++;
+                                            }
+                                        } else if (!split[i].equals(constName)) {
+                                            stringBuilder.append(split[i]);
                                         }
-                                        stringBuilder.append(" ").append(comparedEntry.getValue().substring(comparedEntry.getValue().indexOf(constName) + counter));
-                                    } else if (!split[i].equals(constName)) {
-                                        stringBuilder.append(split[i]);
                                     }
+                                    map.put(comparedKey, stringBuilder.toString());
+                                } else {
+                                    String comparedAlphaNumeric = getAlphaNumericFromSubs(comparedEntry.getValue());
+                                    String comparedOperators = getOperatorFromSubs(comparedEntry.getValue());
+                                    stringBuilder.append("# [");
+                                    stringBuilder.append(constName.replaceAll("[\\[,\\]]", ""));
+                                    for (int z = 0; z < counter; z++) {
+                                        stringBuilder.append("~");
+                                    }
+                                    String cleanCostNames = constName.replaceAll("\\[", "");
+                                    cleanCostNames = cleanCostNames.replaceAll("]", "");
+                                    String numeric = comparedAlphaNumeric.replace(cleanCostNames, "");
+                                    numeric = numeric.replace("[", "");
+                                    numeric = numeric.replace("]", "");
+                                    stringBuilder.append(comparedOperators).append(" ").append(numeric).append("]");
+                                    map.put(comparedKey, stringBuilder.toString());
                                 }
-                            } else {
-                                String cleanConstName = constName.replaceAll("[\\[,\\]]", "");
-                                String cleanComparedConstNames = comparedConstNames.replaceAll("[\\[,\\]]", "");
-                                stringBuilder.append(comparedEntry.getValue().replaceAll(cleanComparedConstNames, cleanConstName));
-                                map.put(comparedKey, stringBuilder.toString());
-                            }
-                        }
-                    } else if (comparedConstNames.replaceAll("~", "").contains(constName.replaceAll("~", ""))) {
-                        if (!comparedEntry.getValue().contains("++") && !comparedEntry.getValue().contains("--")) {
-                            if (comparedEntry.getValue().contains(",")) {
-                                String[] split = comparedEntry.getValue().split(",");
-                                for (int i = 0; i < split.length; i++) {
-                                    if (split[i].equals(constName)) {
-                                        stringBuilder.append(split[i]);
-                                        for (int z = 0; z < counter; z++) {
-                                            stringBuilder.append("~");
-                                            counter++;
+                            } else if (!comparedEntry.getValue().contains("+") & !comparedEntry.getValue().contains("-")) {
+                                if (comparedEntry.getValue().contains(",")) {
+                                    String[] split = comparedEntry.getValue().split(",");
+                                    for (int i = 0; i < split.length; i++) {
+                                        if (split[i].equals(constName)) {
+                                            stringBuilder.append(split[i]);
+                                            for (int z = 0; z < counter; z++) {
+                                                stringBuilder.append("~");
+                                                counter++;
+                                            }
+                                            stringBuilder.append(" ").append(comparedEntry.getValue().substring(comparedEntry.getValue().indexOf(constName) + counter));
+                                        } else if (!split[i].equals(constName)) {
+                                            stringBuilder.append(split[i]);
                                         }
-                                        stringBuilder.append(" ").append(comparedEntry.getValue().substring(comparedEntry.getValue().indexOf(constName) + counter));
-                                    } else if (!split[i].equals(constName)) {
-                                        stringBuilder.append(split[i]);
                                     }
-                                }
-                            } else {
-                                String cleanConstName = constName.replaceAll("[\\[,\\]]", "");
-                                String cleanComparedConstNames = comparedConstNames.replaceAll("[\\[,\\]]", "");
+                                } else {
+                                    String comparedAlphaNumeric = getAlphaNumericFromSubs(comparedEntry.getValue());
+                                    String comparedOperators = getOperatorFromSubs(comparedEntry.getValue());
+                                    stringBuilder.append("[");
+                                    stringBuilder.append(constName.replaceAll("[\\[,\\]]", ""));
+                                    for (int z = 0; z < counter; z++) {
+                                        stringBuilder.append("~");
+                                    }
+                                    String cleanCostNames = constName.replaceAll("\\[", "");
+                                    cleanCostNames = cleanCostNames.replaceAll("]", "");
+                                    String numeric = comparedAlphaNumeric.replace(cleanCostNames, "");
+                                    numeric = numeric.replace("[", "");
+                                    numeric = numeric.replace("]", "");
+                                    stringBuilder.append(comparedOperators).append(" ").append(numeric).append("]");
+                                    map.put(comparedKey, stringBuilder.toString());
 
-                                stringBuilder.append(comparedEntry.getValue().replaceAll(cleanComparedConstNames, cleanConstName));
-                                map.put(comparedKey, stringBuilder.toString());
+//                                    String cleanConstName = constName.replaceAll("[\\[,\\]]", "");
+//                                    String cleanComparedConstNames = comparedConstNames.replaceAll("[\\[,\\]]", "");
+//                                    stringBuilder.append(comparedEntry.getValue().replaceAll(cleanComparedConstNames, cleanConstName));
+//                                    map.put(comparedKey, stringBuilder.toString());
+                                }
+                            } else if (comparedConstNames.replaceAll("~", "").contains(constName.replaceAll("~", ""))) {
+                                if (!comparedEntry.getValue().contains("++") && !comparedEntry.getValue().contains("--")) {
+                                    if (comparedEntry.getValue().contains(",")) {
+                                        String[] split = comparedEntry.getValue().split(",");
+                                        for (int i = 0; i < split.length; i++) {
+                                            if (split[i].equals(constName)) {
+                                                stringBuilder.append(split[i]);
+                                                for (int z = 0; z < counter; z++) {
+                                                    stringBuilder.append("~");
+                                                    counter++;
+                                                }
+                                                stringBuilder.append(" ").append(comparedEntry.getValue().substring(comparedEntry.getValue().indexOf(constName) + counter));
+                                            } else if (!split[i].equals(constName)) {
+                                                stringBuilder.append(split[i]);
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    String cleanConstName = constName.replaceAll("[\\[,\\]]", "");
+                                    String cleanComparedConstNames = comparedConstNames.replaceAll("[\\[,\\]]", "");
+
+                                    stringBuilder.append(comparedEntry.getValue().replaceAll(cleanComparedConstNames, cleanConstName));
+                                    map.put(comparedKey, stringBuilder.toString());
+                                }
                             }
                         }
                     }
                 }
             }
         }
-
         for (Map.Entry<Integer, String> entry : map.entrySet()) {
             String value = entry.getValue();
             int key = entry.getKey();
             String constNames = getConstFromSubs(value);
-
             if (value.contains("#")) {
                 for (Map.Entry<Integer, String> comparedEntry : map.entrySet()) {
                     StringBuilder stringBuilder = new StringBuilder();
@@ -177,8 +234,6 @@ public class SelectDiagramsToProveSolver {
             }
 
         }
-
-
         return map;
     }
 
@@ -221,6 +276,8 @@ public class SelectDiagramsToProveSolver {
         clean = clean.replaceAll("~", "");
         clean = clean.replaceAll("#", "");
         clean = clean.replaceAll(" ", "");
+        clean = clean.replaceAll("\\[", "");
+        clean = clean.replaceAll("]", "");
 
         return clean;
     }
@@ -230,6 +287,8 @@ public class SelectDiagramsToProveSolver {
         clean = clean.replaceAll("~", "");
         clean = clean.replaceAll("#", "");
         clean = clean.replaceAll(" ", "");
+        clean = clean.replaceAll("\\[", "");
+        clean = clean.replaceAll("]", "");
         if (clean.length() != 1) {
             if (!Character.isWhitespace(clean.charAt(0))) {
                 clean = clean.substring(0, 1);
@@ -280,7 +339,6 @@ public class SelectDiagramsToProveSolver {
                 String SMTLIBString = buildArithmetic(constNames, s);
                 BoolExpr f = ctx.parseSMTLIB2String(SMTLIBString, null, null, null, null)[0];
                 solver.add(f);
-                // Todo: Hier soll die methode aufgerufen werden wegen der arith. subs
             } else if (s.charAt(0) != '#') {
 
                 String constName = getConstFromSubs(s);
@@ -313,6 +371,8 @@ public class SelectDiagramsToProveSolver {
     // build Assert Strings
     public String buildAssertString(String constNames, String sub) {
         StringBuilder stringBuilder = new StringBuilder();
+        String clean = sub.replaceAll("\\[", "");
+        clean = clean.replaceAll("]", "");
         stringBuilder.append("(assert ");
         if (constNames.contains("|")) {
             stringBuilder.append("(or");
@@ -332,22 +392,22 @@ public class SelectDiagramsToProveSolver {
                 stringBuilder.append(" )");
             }
             stringBuilder.append(")");
-        } else if (sub.contains("<")) {
+        } else if (clean.contains("<")) {
             stringBuilder.append("(< ")
-                    .append(sub.substring(0, sub.indexOf("<")).trim()).append(" ")
-                    .append(sub.substring(sub.indexOf("<") + 1).trim()).append(")");
-        } else if (sub.contains(">")) {
+                    .append(clean.substring(0, clean.indexOf("<")).trim()).append(" ")
+                    .append(clean.substring(clean.indexOf("<") + 1).trim()).append(")");
+        } else if (clean.contains(">")) {
             stringBuilder.append("(> ")
-                    .append(sub.substring(0, sub.indexOf(">")).trim()).append(" ")
-                    .append(sub.substring(sub.indexOf(">") + 1).trim()).append(")");
-        } else if (sub.contains("=")) {
+                    .append(clean.substring(0, clean.indexOf(">")).trim()).append(" ")
+                    .append(clean.substring(clean.indexOf(">") + 1).trim()).append(")");
+        } else if (clean.contains("=")) {
             stringBuilder.append("(= ")
-                    .append(sub.substring(0, sub.indexOf("=")).trim()).append(" ")
-                    .append(sub.substring(sub.indexOf("=") + 1).trim()).append(")");
-        } else if (sub.contains("+")) {
+                    .append(clean.substring(0, clean.indexOf("=")).trim()).append(" ")
+                    .append(clean.substring(clean.indexOf("=") + 1).trim()).append(")");
+        } else if (clean.contains("+")) {
             stringBuilder.append("(+ ")
-                    .append(sub.substring(0, sub.indexOf("+")).trim()).append(" ")
-                    .append(sub.substring(sub.indexOf("+") + 1).trim()).append(")");
+                    .append(clean.substring(0, clean.indexOf("+")).trim()).append(" ")
+                    .append(clean.substring(clean.indexOf("+") + 1).trim()).append(")");
         }
 
         return stringBuilder.toString();
@@ -384,6 +444,7 @@ public class SelectDiagramsToProveSolver {
         String[] constList = clean.split(",");
         for (String constName : constList) {
             if (!constName.isBlank()) {
+
                 if (!alreadyUsed.toString().contains(constName)) {
                     stringBuilder.append("(declare-const ");
                     stringBuilder.append(constName);
@@ -400,12 +461,16 @@ public class SelectDiagramsToProveSolver {
             stringBuilder.append(constName).append("~");
             stringBuilder.append("( ");
             stringBuilder.append(operator).append(" ");
-            stringBuilder.append(constName);
-            stringBuilder.append(" 1");
+            stringBuilder.append(constName).append(" ");
+            if (parsedSub.contains("++") | parsedSub.contains("--")) {
+                stringBuilder.append("1");
+            } else if (parsedSub.contains("+")) {
+                stringBuilder.append(parsedSub.substring(parsedSub.indexOf("+") + 1, parsedSub.indexOf("]")));
+            } else if (parsedSub.contains("-")) {
+                stringBuilder.append(parsedSub.substring(parsedSub.indexOf("-") + 1, parsedSub.indexOf("]")));
+            }
+            // hier muss dynamisch die Zahl ausgelesen und appended werden, da hier auch andere zahlen stehen können
             stringBuilder.append(")))");
-            //Todo: Mark Strings of Arith with #
-            //  hier sollen die fertigen strings für SMTLIB() gebaut werden
-            //  debug die map und gucke of diese richtig erstellt wird.
         }
         return stringBuilder.toString();
     }

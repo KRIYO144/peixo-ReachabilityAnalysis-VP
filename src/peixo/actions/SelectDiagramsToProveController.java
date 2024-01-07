@@ -111,35 +111,49 @@ public class SelectDiagramsToProveController implements VPActionController {
                     int counter = 0;
                     for (String path : selectedBuiltPath) {
                         String firstStateActivities = path.substring(0, path.indexOf("[") - 1).replaceAll("\\(", "");
-                        String transitionConstraint = path.substring(path.indexOf("[") + 1, path.indexOf("]"));
-                        String lastStateActivities = path.substring(path.indexOf("]") + 2).replaceAll("\\)", "");
+//                        String transitionConstraint = path.substring(path.indexOf("[") + 1, path.indexOf("]"));
+                        String transitionConstraint = path.substring(path.indexOf("$") + 1, path.lastIndexOf("$"));
+                        String lastStateActivities = path.substring(path.lastIndexOf("$") + 1).replaceAll("\\)", "");
                         String[] splitFirstStateActivities = firstStateActivities.trim().split("#");
                         String[] splitLastStateActivities = lastStateActivities.trim().split("#");
-                        // Todo: Ändere die Reihenfolge der Exit Activity
+                        String[] splitTransitionConstraint = transitionConstraint.trim().split(" ");
+
                         // Fill String with FirstState Activities
-                        if (counter == 0) {
+
+
+//                        if (counter == 0) {
                             for (String s : splitFirstStateActivities) {
                                 if (!s.isBlank()) {
                                     stringbuilder.append(s).append(" & ");
                                 }
                             }
-                            counter++;
-                        }
+//                            counter++;
+//                        }
                         // Fill String with Transition Constraint
-                        if (!transitionConstraint.isBlank()) {
-                            stringbuilder.append(transitionConstraint).append(" & ");
-
-                        } else if (transitionConstraint.isBlank()) {
-                            stringbuilder.append(" ");
-                        }
-                        // Fill String with LastState Activities
-                        for (String s : splitLastStateActivities) {
+                        for (String s : splitTransitionConstraint) {
                             if (!s.isBlank()) {
                                 stringbuilder.append(s).append(" & ");
+                            } else if (s.isBlank()) {
+                                stringbuilder.append(" ");
                             }
                         }
+                        // Fill String with LastState Activities
+//                        for (String s : splitLastStateActivities) {
+//                            if (!s.isBlank()) {
+//                                stringbuilder.append(s).append(" & ");
+//                            }
+//                        }
                     }
-                    builtPaths.add(stringbuilder.toString().substring(0, stringbuilder.lastIndexOf("&")));
+                    String lastStateActivities = selectedBuiltPath.get(selectedBuiltPath.size() - 1).
+                            substring(selectedBuiltPath.get(selectedBuiltPath.size() - 1).
+                                    lastIndexOf("$") + 1).replaceAll("\\)", "");
+                    String[] splitLastStateActivities = lastStateActivities.trim().split("#");
+                    for (String s : splitLastStateActivities) {
+                        if (!s.isBlank()) {
+                            stringbuilder.append(s).append(" & ");
+                        }
+                    }
+                    builtPaths.add(stringbuilder.substring(0, stringbuilder.lastIndexOf("&")));
                 }
                 // ToDo: Aktuell geht alles außer State < State2
                 int unsatisSolvers = 0;
@@ -154,6 +168,7 @@ public class SelectDiagramsToProveController implements VPActionController {
                             case UNSATISFIABLE:
                                 unsatisSolvers++;
                                 viewManager.showMessage("Solver is Unsatisfiable: " + Arrays.toString(solver.getAssertions()));
+                                viewManager.showMessage("Dieser Pfad ist nicht erreichbar: " + s);
                                 break;
                             case UNKNOWN:
                                 viewManager.showMessage("Solver status is Unknown: " + Arrays.toString(solver.getAssertions()));
@@ -177,6 +192,7 @@ public class SelectDiagramsToProveController implements VPActionController {
         ArrayList<LinkedList<String>> pathsArrayList = new ArrayList<>();
         ArrayList<IState2> allStates = new ArrayList<>();
         ArrayList<ITransition2> allTrans = new ArrayList<>();
+        ArrayList<IChoice> allChoices = new ArrayList<>();
         String initState = "";
         Graph<String, DefaultEdge> g = new DefaultDirectedGraph<>(DefaultEdge.class);
         ArrayList<ArrayList<String>> allPathsWithTransitions = new ArrayList<>();
@@ -192,7 +208,8 @@ public class SelectDiagramsToProveController implements VPActionController {
             }
             if (e.getModelElement() instanceof IChoice) {
                 IChoice choice = (IChoice) e.getModelElement();
-//                allStates.add(choice);
+                String name = choice.getName();
+                allChoices.add(choice);
                 g.addVertex(choice.getId());
             }
             // Find Inital State
@@ -211,11 +228,26 @@ public class SelectDiagramsToProveController implements VPActionController {
             while (itor.hasNext()) {
                 LinkedList<String> helperList = new LinkedList<>();
                 ITransition2 transition = (ITransition2) itor.next();
-                IState2 state = (IState2) transition.getTo();
+//                IState2 state = (IState2) transition.getTo();
+                IModelElement state = transition.getTo();
                 if (!Objects.equals(s.getId(), state.getId())) {
                     helperList.add(s.getId());
                     helperList.add(state.getId());
                     g.addEdge(s.getId(), state.getId());
+                    pathsArrayList.add(helperList);
+                }
+            }
+        }
+        for (IChoice c : allChoices) {
+            Iterator itor = c.fromRelationshipIterator();
+            while (itor.hasNext()) {
+                LinkedList<String> helperList = new LinkedList<>();
+                ITransition2 transition = (ITransition2) itor.next();
+                IModelElement choice = transition.getTo();
+                if (!Objects.equals(c.getId(), choice.getId())) {
+                    helperList.add(c.getName());
+                    helperList.add(choice.getName());
+                    g.addEdge(c.getId(), choice.getId());
                     pathsArrayList.add(helperList);
                 }
             }
@@ -229,6 +261,7 @@ public class SelectDiagramsToProveController implements VPActionController {
         for (String endingState : verticesWithoutSucc) {
             String path = allDirectedPaths.getAllPaths(initState, endingState, false, 20).toString();
             paths.add(path);
+
         }
 //        viewManager.showMessage("Alle Paths: " + Arrays.toString(paths.toArray()));
 
@@ -249,13 +282,26 @@ public class SelectDiagramsToProveController implements VPActionController {
                     for (ITransition2 trans : allTrans) {
                         String from = trans.getFrom().getId();
                         String to = trans.getTo().getId();
+                        IModelElement element;
                         if (from.equals(firstState) && to.equals(lastState)) {
-                            if (trans.getGuard() != null) {
-                                stringBuilder.append("[").append(trans.getGuard().getSpecification().getValueAsString()).append("]").append(" ");
+                            if (trans.getGuard() != null && trans.getEffect() == null) {
+                                stringBuilder.append("$[").append(trans.getGuard().getSpecification().getValueAsString()).append("]$").append(" ");
+                                element = trans.getEffect();
+                                // If the Transition doenst have a guard
                             }
-                            // If the Transition doenst have a guard
-                            else if (trans.getGuard() == null) {
-                                stringBuilder.append("[ ] ");
+                            if (trans.getGuard() == null && trans.getEffect() == null) {
+                                stringBuilder.append("$[ ]$ ");
+                            }
+                            if (trans.getGuard() != null && trans.getEffect() != null) {
+                                stringBuilder.append("$[").append(trans.getGuard().getSpecification().getValueAsString()).append("]").append(" ");
+                            }
+                            if (trans.getGuard() == null && trans.getEffect() != null) {
+                                IActivity effect = (IActivity) trans.getEffect();
+                                stringBuilder.append("$[").append(effect.getBody()).append("]$").append(" ");
+                            }
+                            if (trans.getEffect() != null && trans.getGuard() != null) {
+                                IActivity effect = (IActivity) trans.getEffect();
+                                stringBuilder.append("[").append(effect.getBody()).append("]$").append(" ");
                             }
                         }
                     }
@@ -266,16 +312,19 @@ public class SelectDiagramsToProveController implements VPActionController {
                 allPathsWithTransitions.add(pathsWithTransitions);
             }
         }
-        // Todo: Take all paths of allPathsWithTransitions and add the entry, do, exit of the states and put it in another list
-        //  Change the States from GetName() to GetId()
+
         for (ArrayList<String> pathsWithTrans : allPathsWithTransitions) {
             ArrayList<String> helperlist = new ArrayList<>();
             for (String link : pathsWithTrans) {
                 StringBuilder stringBuilder = new StringBuilder();
-                String firstState = link.substring(1, link.indexOf("[") - 1);
-                String lastState = link.substring(link.indexOf("]") + 2, link.indexOf(")"));
-                String constraintForTrans = link.substring(link.indexOf("["), link.indexOf("]") + 1);
-                ArrayList<IState2> objects = new ArrayList<>();
+                String firstState = link.substring(1, link.indexOf("[") - 2);
+                String lastState = link.substring(link.lastIndexOf(("]")) + 3, link.indexOf(")"));
+                String guardForTrans = link.substring(link.indexOf("["), link.indexOf("]") + 1);
+                String activityForTrans = "";
+                if (!(link.indexOf("[") == link.lastIndexOf("["))) {
+                    activityForTrans = link.substring(link.lastIndexOf("["), link.lastIndexOf("]") + 1);
+                }
+                ArrayList<IModelElement> objects = new ArrayList<>();
                 IDiagramElement[] diagramElementArray = pm.getProject().getDiagramById(activeDiagram).toDiagramElementArray();
 
                 for (IDiagramElement el2 : diagramElementArray) {
@@ -283,58 +332,117 @@ public class SelectDiagramsToProveController implements VPActionController {
                         IState2 state = (IState2) el2.getModelElement();
                         if (Objects.equals(state.getId(), firstState)) {
                             objects.add(state);
-
+                        }
+                    } else if (el2.getModelElement() instanceof IChoice) {
+                        IChoice choice = (IChoice) el2.getModelElement();
+                        if (Objects.equals(choice.getId(), firstState)) {
+                            objects.add(choice);
                         }
                     }
                 }
+
                 for (IDiagramElement el2 : diagramElementArray) {
                     if (el2.getModelElement() instanceof IState2) {
                         IState2 state = (IState2) el2.getModelElement();
                         if (Objects.equals(state.getId(), lastState)) {
                             objects.add(state);
                         }
+                    } else if (el2.getModelElement() instanceof IChoice) {
+                        IChoice choice = (IChoice) el2.getModelElement();
+                        if (Objects.equals(choice.getId(), lastState)) {
+                            objects.add(choice);
+                        }
                     }
                 }
-
-//                IState2 lastStateObject = (IState2) pm.getProject().getDiagramElementById(lastState).getModelElement();
                 stringBuilder.append("(");
-                if (objects.get(0).getEntry() != null) {
-                    stringBuilder.append("#").append(objects.get(0).getEntry().getBody()).append(" ");
-                } else if (objects.get(0).getEntry() == null) {
-                    stringBuilder.append(" ");
-                }
-                if (objects.get(0).getDoActivity() != null) {
-                    stringBuilder.append("#").append(objects.get(0).getDoActivity().getBody()).append(" ");
-                } else if (objects.get(0).getEntry() == null) {
-                    stringBuilder.append(" ");
-                }
-                if (objects.get(0).getExit() != null) {
-                    stringBuilder.append("#").append(objects.get(0).getExit().getBody()).append(" ");
-                } else if (objects.get(0).getEntry() == null) {
-                    stringBuilder.append(" ");
-                }
-                stringBuilder.append(constraintForTrans).append(" ");
+                int counter = 0;
+                for (IModelElement e : objects) {
+                    if (e instanceof IChoice) {
+                        counter++;
+                        stringBuilder.append(" ");
+                        if (counter == 1) {
+                            stringBuilder.append("$").append(guardForTrans).append(" ");
+                            if (!activityForTrans.isBlank()) {
+                                stringBuilder.append(activityForTrans).append("$").append(" ");
+                            } else if (activityForTrans.isBlank()) {
+                                stringBuilder.append("$ ");
+                            }
+                        }
+                    }
+                    if (e instanceof IState2) {
+                        IState2 state = (IState2) e;
+                        counter++;
+                        if (state.getEntry() != null) {
+                            stringBuilder.append("#").append(state.getEntry().getBody()).append(" ");
+                        } else if (state.getEntry() == null) {
+                            stringBuilder.append(" ");
+                        }
+                        if (state.getDoActivity() != null) {
+                            stringBuilder.append("#").append(state.getDoActivity().getBody()).append(" ");
+                        } else if (state.getDoActivity() == null) {
+                            stringBuilder.append(" ");
+                        }
+                        // Here Guard
+                        if (counter == 1) {
+                            stringBuilder.append("$").append(guardForTrans).append(" ");
+                        }
+                        if (state.getExit() != null) {
+                            stringBuilder.append("#").append(state.getExit().getBody()).append(" ");
+                        } else if (state.getExit() == null) {
+                            stringBuilder.append(" ");
+                        }
+                        // Here Activity of Trans
+                        if (counter == 1) {
+                            if (!activityForTrans.isBlank()) {
+                                stringBuilder.append(activityForTrans).append("$ ");
+                            } else if (activityForTrans.isBlank()) {
+                                stringBuilder.append("$ ");
+                            }
+                        }
 
-
-                if (objects.get(1).getEntry() != null) {
-                    stringBuilder.append("#").append(objects.get(1).getEntry().getBody()).append(" ");
-                } else if (objects.get(0).getEntry() == null) {
-                    stringBuilder.append("#").append(" ");
-                }
-                if (objects.get(1).getDoActivity() != null) {
-                    stringBuilder.append("#").append(objects.get(1).getDoActivity().getBody()).append(" ");
-                } else if (objects.get(0).getEntry() == null) {
-                    stringBuilder.append(" ");
-                }
-                if (objects.get(1).getExit() != null) {
-                    stringBuilder.append("#").append(objects.get(1).getExit().getBody()).append(" ");
-                } else if (objects.get(0).getEntry() == null) {
-                    stringBuilder.append(" ");
+                    }
                 }
                 stringBuilder.append(")");
+
+//                IState2 lastStateObject = (IState2) pm.getProject().getDiagramElementById(lastState).getModelElement();
+//                    stringBuilder.append("(");
+//                if(!objects.isEmpty()) {
+//                    if (objects.get(0).getEntry() != null) {
+//                        stringBuilder.append("#").append(objects.get(0).getEntry().getBody()).append(" ");
+//                    } else if (objects.get(0).getEntry() == null) {
+//                        stringBuilder.append(" ");
+//                    }
+//                    if (objects.get(0).getDoActivity() != null) {
+//                        stringBuilder.append("#").append(objects.get(0).getDoActivity().getBody()).append(" ");
+//                    } else if (objects.get(0).getDoActivity() == null) {
+//                        stringBuilder.append(" ");
+//                    }
+//                    if (objects.get(0).getExit() != null) {
+//                        stringBuilder.append("#").append(objects.get(0).getExit().getBody()).append(" ");
+//                    } else if (objects.get(0).getExit() == null) {
+//                        stringBuilder.append(" ");
+//                    }
+//                    stringBuilder.append(guardForTrans).append(" ");
+//
+//
+//                    if (objects.get(1).getEntry() != null) {
+//                        stringBuilder.append("#").append(objects.get(1).getEntry().getBody()).append(" ");
+//                    } else if (objects.get(0).getEntry() == null) {
+//                        stringBuilder.append("#").append(" ");
+//                    }
+//                    if (objects.get(1).getDoActivity() != null) {
+//                        stringBuilder.append("#").append(objects.get(1).getDoActivity().getBody()).append(" ");
+//                    } else if (objects.get(0).getEntry() == null) {
+//                        stringBuilder.append(" ");
+//                    }
+//                    if (objects.get(1).getExit() != null) {
+//                        stringBuilder.append("#").append(objects.get(1).getExit().getBody()).append(" ");
+//                    } else if (objects.get(0).getEntry() == null) {
+//                        stringBuilder.append(" ");
+//                    }
+//                }
+//                stringBuilder.append(")");
                 helperlist.add(stringBuilder.toString());
-                // Todo: Make a list of this and add it to big global list
-                //   debug this also
             }
             allPathsWithTransitionsAndStateActions.add(helperlist);
         }
