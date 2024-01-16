@@ -10,6 +10,7 @@ import java.util.*;
 
 public class SelectDiagramsToProveSolver {
 
+
     // This is the Main Logic of the Solver
     public Solver buildSolverLogic(String constraint) {
         HashMap<String, String> cfg = new HashMap<>();
@@ -17,17 +18,16 @@ public class SelectDiagramsToProveSolver {
         cfg.put("proof", "true");
         Context ctx = new Context(cfg);
         Solver solver = ctx.mkSolver();
-        String s = constraint;
         ArrayList<String> subs = new ArrayList<>();
         ArrayList<String> parsedSubs = new ArrayList<>();
-        HashMap<Integer, String> map = new HashMap<Integer, String>();
+        HashMap<Integer, String> map = new HashMap<>();
         HashMap<Integer, String> parsedMap = new HashMap<Integer, String>();
         int index = 0;
         int init = 0;
-        String rest = s;
+        String rest = constraint;
         int nr = 0;
         // Cut the Constraints at "&" and put them in a Arraylist
-        if (s.contains("&")) {
+        if (constraint.contains("&")) {
             while (true) {
                 index = rest.indexOf("&", index);
                 if (index != -1) {
@@ -64,12 +64,13 @@ public class SelectDiagramsToProveSolver {
         return solver;
     }
 
+
     public HashMap<Integer, String> parseArithmetics(HashMap<Integer, String> map) {
         for (Map.Entry<Integer, String> entry : map.entrySet()) {
             int counter = 1;
             int key = entry.getKey();
             String value = entry.getValue();
-            String constName = getConstFromSubs(entry.getValue());
+            String constName = getConstFromSubs(entry.getValue()).replaceAll("\\[", "").replaceAll("]", "");
             String operators = getOperatorFromSubs(entry.getValue());
             String alphaNumeric = getAlphaNumericFromSubs(entry.getValue());
             if (value.contains("+") | value.contains("-")) {
@@ -79,7 +80,7 @@ public class SelectDiagramsToProveSolver {
                 StringBuilder stringBuilder = new StringBuilder();
                 int comparedKey = comparedEntry.getKey();
                 if (key < comparedEntry.getKey()) {
-                    String comparedConstNames = getConstFromSubs(comparedEntry.getValue());
+                    String comparedConstNames = getConstFromSubs(comparedEntry.getValue()).replaceAll("\\[", "").replaceAll("]", "");
                     if (comparedConstNames.contains(constName)) {
                         if (value.contains("+") | value.contains("-")) {
                             if (comparedEntry.getValue().contains("++") | comparedEntry.getValue().contains("--")) {
@@ -148,6 +149,8 @@ public class SelectDiagramsToProveSolver {
                                     stringBuilder.append(comparedOperators).append(" ").append(numeric).append("]");
                                     map.put(comparedKey, stringBuilder.toString());
                                 }
+
+
                             } else if (!comparedEntry.getValue().contains("+") & !comparedEntry.getValue().contains("-")) {
                                 if (comparedEntry.getValue().contains(",")) {
                                     String[] split = comparedEntry.getValue().split(",");
@@ -201,10 +204,10 @@ public class SelectDiagramsToProveSolver {
                                             }
                                         }
                                     }
+
                                 } else {
                                     String cleanConstName = constName.replaceAll("[\\[,\\]]", "");
                                     String cleanComparedConstNames = comparedConstNames.replaceAll("[\\[,\\]]", "");
-
                                     stringBuilder.append(comparedEntry.getValue().replaceAll(cleanComparedConstNames, cleanConstName));
                                     map.put(comparedKey, stringBuilder.toString());
                                 }
@@ -377,7 +380,6 @@ public class SelectDiagramsToProveSolver {
         if (constNames.contains("|")) {
             stringBuilder.append("(or");
             ArrayList<String> orSubs = getORSubs(sub);
-
             for (String s : orSubs) {
                 stringBuilder.append("( ");
                 String operators = getOperatorFromSubs(s);
@@ -456,7 +458,6 @@ public class SelectDiagramsToProveSolver {
                     alreadyUsed.append(constName).append("~");
                 }
             }
-
             stringBuilder.append("(assert (= ");
             stringBuilder.append(constName).append("~");
             stringBuilder.append("( ");
@@ -465,9 +466,12 @@ public class SelectDiagramsToProveSolver {
             if (parsedSub.contains("++") | parsedSub.contains("--")) {
                 stringBuilder.append("1");
             } else if (parsedSub.contains("+")) {
-                stringBuilder.append(parsedSub.substring(parsedSub.indexOf("+") + 1, parsedSub.indexOf("]")));
+                String cleanParsedSub = parsedSub.replaceAll("]", "").replace("#", "");
+
+                stringBuilder.append(cleanParsedSub.substring(cleanParsedSub.indexOf("+") + 1));
             } else if (parsedSub.contains("-")) {
-                stringBuilder.append(parsedSub.substring(parsedSub.indexOf("-") + 1, parsedSub.indexOf("]")));
+                String cleanParsedSub = parsedSub.replaceAll("]", "");
+                stringBuilder.append(cleanParsedSub.substring(cleanParsedSub.indexOf("-") + 1));
             }
             // hier muss dynamisch die Zahl ausgelesen und appended werden, da hier auch andere zahlen stehen können
             stringBuilder.append(")))");
