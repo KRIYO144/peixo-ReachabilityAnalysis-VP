@@ -121,7 +121,9 @@ public class SelectDiagramsToProveController implements VPActionController {
         SelectDiagramsToProveSolver solverLogic = new SelectDiagramsToProveSolver();
 
         ArrayList<ArrayList<String>> paths = new ArrayList<>();
-        ArrayList<String> builtPaths = new ArrayList<>();
+//        ArrayList<ArrayList<String>> builtPaths = new ArrayList<>();
+        HashMap<String, String> builtPaths = new HashMap<>();
+
 
 
         for (peixoDiagram d : diagrams) {
@@ -129,46 +131,52 @@ public class SelectDiagramsToProveController implements VPActionController {
                 IDiagramUIModel activeDiagram = d.getModelObject();
                 IDiagramElement[] diagramElements = getDiagramElementsInArray(d.getModelObject());
                 paths = buildPaths(diagramElements, activeDiagram.getId());
+                ArrayList<String> allStates = new ArrayList<>();
                 for (ArrayList<String> selectedBuiltPath : paths) {
                     StringBuilder stringbuilder = new StringBuilder();
+                    ArrayList<String> helperList = new ArrayList<>();
                     int counter = 0;
                     for (String path : selectedBuiltPath) {
-                        String firstStateActivities = path.substring(0, path.indexOf("[") - 1).replaceAll("\\(", "");
+                        if (!path.contains("§")) {
+                            String firstStateActivities = path.substring(0, path.indexOf("[") - 1).replaceAll("\\(", "");
 //                        String transitionConstraint = path.substring(path.indexOf("[") + 1, path.indexOf("]"));
-                        String transitionConstraint = path.substring(path.indexOf("$") + 1, path.lastIndexOf("$"));
-                        String lastStateActivities = path.substring(path.lastIndexOf("$") + 1).replaceAll("\\)", "");
-                        String[] splitFirstStateActivities = firstStateActivities.trim().split("#");
-                        String[] splitLastStateActivities = lastStateActivities.trim().split("#");
-                        String[] splitTransitionConstraint = transitionConstraint.trim().split(" ");
+                            String transitionConstraint = path.substring(path.indexOf("$") + 1, path.lastIndexOf("$"));
+                            String lastStateActivities = path.substring(path.lastIndexOf("$") + 1).replaceAll("\\)", "");
+                            String[] splitFirstStateActivities = firstStateActivities.trim().split("#");
+                            String[] splitLastStateActivities = lastStateActivities.trim().split("#");
+                            String[] splitTransitionConstraint = transitionConstraint.trim().split(" ");
 
-                        // Fill String with FirstState Activities
+                            // Fill String with FirstState Activities
 
 
 //                        if (counter == 0) {
-                        for (String s : splitFirstStateActivities) {
-                            if (!s.isBlank()) {
-                                stringbuilder.append(s).append(" & ");
+                            for (String s : splitFirstStateActivities) {
+                                if (!s.isBlank()) {
+                                    stringbuilder.append(s).append(" & ");
+                                }
                             }
-                        }
 //                            counter++;
 //                        }
-                        // Fill String with Transition Constraint
-                        for (String s : splitTransitionConstraint) {
-                            if (!s.isBlank()) {
-                                stringbuilder.append(s.replaceAll("#", "")).append(" & ");
-                            } else if (s.isBlank()) {
-                                stringbuilder.append(" ");
+                            // Fill String with Transition Constraint
+                            for (String s : splitTransitionConstraint) {
+                                if (!s.isBlank()) {
+                                    stringbuilder.append(s.replaceAll("#", "")).append(" & ");
+                                } else if (s.isBlank()) {
+                                    stringbuilder.append(" ");
+                                }
                             }
-                        }
-                        // Fill String with LastState Activities
+                            // Fill String with LastState Activities
 //                        for (String s : splitLastStateActivities) {
 //                            if (!s.isBlank()) {
 //                                stringbuilder.append(s).append(" & ");
 //                            }
 //                        }
+                        } else {
+                            helperList.add(path);
+                        }
                     }
-                    String lastStateActivities = selectedBuiltPath.get(selectedBuiltPath.size() - 1).
-                            substring(selectedBuiltPath.get(selectedBuiltPath.size() - 1).
+                    String lastStateActivities = selectedBuiltPath.get(selectedBuiltPath.size() - 2).
+                            substring(selectedBuiltPath.get(selectedBuiltPath.size() - 2).
                                     lastIndexOf("$") + 1).replaceAll("\\)", "");
                     String[] splitLastStateActivities = lastStateActivities.trim().split("#");
                     for (String s : splitLastStateActivities) {
@@ -176,27 +184,30 @@ public class SelectDiagramsToProveController implements VPActionController {
                             stringbuilder.append(s).append(" & ");
                         }
                     }
-                    builtPaths.add(stringbuilder.substring(0, stringbuilder.lastIndexOf("&")));
+                    builtPaths.put(stringbuilder.substring(0, stringbuilder.lastIndexOf("&")), helperList.get(0));
+//                    helperList.add(stringbuilder.substring(0, stringbuilder.lastIndexOf("&")));
                 }
                 // ToDo: Aktuell geht alles außer State < State2
 
-                for (String s : builtPaths) {
-
+//                for (String s : builtPaths) {
+                ArrayList<String> reachableStates = new ArrayList<>();
+                for (Map.Entry<String, String> s : builtPaths.entrySet()) {
                     try {
                         if (unsatisSolvers == 0) {
-                            Solver solver = solverLogic.buildSolverLogic(s);
+                            Solver solver = solverLogic.buildSolverLogic(s.getKey());
                             switch (solver.check()) {
                                 case SATISFIABLE:
-//                                    viewManager.showMessage("Solver is Satisfiable: " + Arrays.toString(solver.getAssertions()));
-//                                    viewManager.showMessage("Hier ist das Model: " + solver.getModel().toString());
-//                                    viewManager.showMessage("Der Pfad ", "peixo");
-//                                    viewManager.showMessage(s,"peixo");
-//                                    viewManager.showMessage("ist erreichbar", "peixo");
+                                    String[] reachableStatesFromS = s.getValue().split(" ");
+                                    Collections.addAll(reachableStates, reachableStatesFromS);
+                                    for (ListIterator<String> i = reachableStates.listIterator(); i.hasNext(); ) {
+                                        i.set(i.next().replaceAll("[§,(,)]", ""));
+                                    }
+                                    reachableStates.removeIf(String::isBlank);
+                                    Set<String> set = new HashSet<>(reachableStates.size());
+                                    reachableStates.removeIf(p -> !set.add(p));
+
                                     break;
                                 case UNSATISFIABLE:
-                                    unsatisSolvers++;
-//                                    viewManager.showMessage("Solver is Unsatisfiable: " + Arrays.toString(solver.getAssertions()));
-                                    viewManager.showMessage("Dieser Pfad ist nicht erreichbar: " + s, "peixo");
                                     break;
                                 case UNKNOWN:
                                     viewManager.showMessage("Solver status is Unknown: " + Arrays.toString(solver.getAssertions()));
@@ -204,14 +215,49 @@ public class SelectDiagramsToProveController implements VPActionController {
                             }
                         }
                     } catch (Z3Exception | IndexOutOfBoundsException exception) {
-                        unsatisSolvers++;
+                        viewManager.showMessage("Es ist ein Fehler in der Solverlogik aufgetreten", "peixo");
                         viewManager.showMessage(exception.getMessage());
                     }
                 }
-                if (unsatisSolvers != 0) {
-                    viewManager.showMessage("Einer der Pfade ist nicht erreichbar.", "peixo");
+                for (IDiagramElement e : diagramElements) {
+                    if (e.getModelElement() instanceof IState2) {
+                        IState2 state = (IState2) e.getModelElement();
+                        allStates.add(state.getId());
+
+                    }
+                    if (e.getModelElement() instanceof IChoice) {
+                        IChoice choice = (IChoice) e.getModelElement();
+                        allStates.add(choice.getId());
+                    }
+                }
+
+                if (reachableStates.containsAll(allStates)) {
+                    viewManager.showMessage("Alle States sind erreichbar", "peixo");
                 } else {
-                    viewManager.showMessage("Alle Pfade sind erreichbar.", "peixo");
+
+                    List<String> unreachableStates = allStates.stream().
+                            filter(e -> !reachableStates.contains(e)).collect(Collectors.toList());
+
+                    StringBuilder unreachableStatesToPrint = new StringBuilder();
+                    for (IDiagramElement e : diagramElements) {
+                        if (e.getModelElement() instanceof IState2) {
+                            IState2 state = (IState2) e.getModelElement();
+                            for (String s : unreachableStates) {
+                                if (state.getId().equals(s)) {
+                                    unreachableStatesToPrint.append(state.getName()).append(" ");
+                                }
+                            }
+                        }
+                        if (e.getModelElement() instanceof IChoice) {
+                            IChoice choice = (IChoice) e.getModelElement();
+                            for (String s : unreachableStates) {
+                                if (choice.getId().equals(s)) {
+                                    unreachableStatesToPrint.append(choice.getName()).append(" ");
+                                }
+                            }
+                        }
+                    }
+                    viewManager.showMessage("Die States " + unreachableStatesToPrint + "sind nicht erreichbar", "peixo");
                 }
             }
         }
@@ -305,7 +351,7 @@ public class SelectDiagramsToProveController implements VPActionController {
         for (String endingState : allVertices) {
             try {
                 if (!Objects.equals(initState, endingState)) {
-                    String path = allDirectedPaths.getAllPaths(initState, endingState, false, 20).toString();
+                    String path = allDirectedPaths.getAllPaths(initState, endingState, false, 50).toString();
                     if (!path.equals("[]")) {
                         paths.add(path);
                     } else if (path.equals("[]")) {
@@ -386,6 +432,7 @@ public class SelectDiagramsToProveController implements VPActionController {
 
         for (ArrayList<String> pathsWithTrans : allPathsWithTransitions) {
             ArrayList<String> helperlist = new ArrayList<>();
+            StringBuilder statesPassed = new StringBuilder();
             for (String link : pathsWithTrans) {
                 StringBuilder stringBuilder = new StringBuilder();
                 String firstState = link.substring(1, link.indexOf("[") - 2);
@@ -426,9 +473,12 @@ public class SelectDiagramsToProveController implements VPActionController {
                     }
                 }
                 stringBuilder.append("(");
+                statesPassed.append("§(");
                 int counter = 0;
                 for (IModelElement e : objects) {
                     if (e instanceof IChoice) {
+                        IChoice choice = (IChoice) e;
+                        statesPassed.append(choice.getId()).append(" ");
                         counter++;
                         stringBuilder.append(" ");
                         if (counter == 1) {
@@ -442,6 +492,7 @@ public class SelectDiagramsToProveController implements VPActionController {
                     }
                     if (e instanceof IState2) {
                         IState2 state = (IState2) e;
+                        statesPassed.append(state.getId()).append(" ");
                         counter++;
                         if (state.getEntry() != null) {
                             stringBuilder.append("#").append(state.getEntry().getBody()).append(" ");
@@ -474,10 +525,14 @@ public class SelectDiagramsToProveController implements VPActionController {
                     }
                 }
                 stringBuilder.append(")");
+                statesPassed.append(")");
 
                 helperlist.add(stringBuilder.toString());
+//                helperlist.add(statesPassed.toString());
             }
+            helperlist.add(statesPassed.toString());
             allPathsWithTransitionsAndStateActions.add(helperlist);
+
         }
         return allPathsWithTransitionsAndStateActions;
 

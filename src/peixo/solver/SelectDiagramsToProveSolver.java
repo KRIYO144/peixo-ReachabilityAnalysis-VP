@@ -59,7 +59,6 @@ public class SelectDiagramsToProveSolver {
 
             }
         }
-
         buildConstraints(parsedSubs, ctx, solver);
         return solver;
     }
@@ -73,7 +72,7 @@ public class SelectDiagramsToProveSolver {
             String constName = getConstFromSubs(entry.getValue()).replaceAll("\\[", "").replaceAll("]", "");
             String operators = getOperatorFromSubs(entry.getValue());
             String alphaNumeric = getAlphaNumericFromSubs(entry.getValue());
-            if (value.contains("+") | value.contains("-")) {
+            if (value.contains("+") | value.contains("-") | value.contains("*")) {
                 map.put(key, "# " + entry.getValue());
             }
             for (Map.Entry<Integer, String> comparedEntry : map.entrySet()) {
@@ -114,8 +113,8 @@ public class SelectDiagramsToProveSolver {
                                     map.put(comparedKey, stringBuilder.toString());
                                 }
 
-                            } else if (comparedEntry.getValue().contains("+") | comparedEntry.getValue().contains("-")) {
-                                if (value.contains("+") | value.contains("-")) {
+                            } else if (comparedEntry.getValue().contains("+") | comparedEntry.getValue().contains("-") | comparedEntry.getValue().contains("*")) {
+                                if (value.contains("+") | value.contains("-") | value.contains("*")) {
                                     map.put(key, "# " + entry.getValue());
                                 }
                                 if (comparedEntry.getValue().contains(",")) {
@@ -151,7 +150,7 @@ public class SelectDiagramsToProveSolver {
                                 }
 
 
-                            } else if (!comparedEntry.getValue().contains("+") & !comparedEntry.getValue().contains("-")) {
+                            } else if (!comparedEntry.getValue().contains("+") & !comparedEntry.getValue().contains("-") | !comparedEntry.getValue().contains("*")) {
                                 if (comparedEntry.getValue().contains(",")) {
                                     String[] split = comparedEntry.getValue().split(",");
                                     for (int i = 0; i < split.length; i++) {
@@ -303,7 +302,7 @@ public class SelectDiagramsToProveSolver {
 
 
     public String getAlphaNumericFromSubs(String sub) {
-        String clean = sub.replaceAll("[<,>,=,|,+]", " ");
+        String clean = sub.replaceAll("[<,>,=,|,+,*]", " ");
         return clean;
     }
 
@@ -467,13 +466,15 @@ public class SelectDiagramsToProveSolver {
                 stringBuilder.append("1");
             } else if (parsedSub.contains("+")) {
                 String cleanParsedSub = parsedSub.replaceAll("]", "").replace("#", "");
-
                 stringBuilder.append(cleanParsedSub.substring(cleanParsedSub.indexOf("+") + 1));
             } else if (parsedSub.contains("-")) {
                 String cleanParsedSub = parsedSub.replaceAll("]", "");
                 stringBuilder.append(cleanParsedSub.substring(cleanParsedSub.indexOf("-") + 1));
+            } else if (parsedSub.contains("*")) {
+                String cleanParsedSub = parsedSub.replaceAll("]", "").replace("#", "");
+                stringBuilder.append(cleanParsedSub.substring(cleanParsedSub.indexOf("*") + 1));
             }
-            // hier muss dynamisch die Zahl ausgelesen und appended werden, da hier auch andere zahlen stehen können
+
             stringBuilder.append(")))");
         }
         return stringBuilder.toString();
