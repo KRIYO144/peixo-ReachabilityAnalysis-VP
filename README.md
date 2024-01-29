@@ -1,2 +1,4 @@
 # VP_Plugin
-Repo für das Visual Paradigm Plugin für die Bachelorarbeit
+Visual Paradigm Plugin for Reachability Analysis of UML-Statemachines
+
+
