@@ -28,7 +28,7 @@ import org.jgrapht.*;
 public class SelectDiagramsToProveController implements VPActionController {
     ViewManager viewManager = VPPlugin.VIEW_MANAGER;
     ProjectManager pm = VPPlugin.PROJECT_MANAGER;
-    int unsatisSolvers = 0;
+    boolean buildLogic = true;
 
 
 //    private Solver Solver;
@@ -135,11 +135,10 @@ public class SelectDiagramsToProveController implements VPActionController {
                 for (ArrayList<String> selectedBuiltPath : paths) {
                     StringBuilder stringbuilder = new StringBuilder();
                     ArrayList<String> helperList = new ArrayList<>();
-                    int counter = 0;
+
                     for (String path : selectedBuiltPath) {
                         if (!path.contains("§")) {
                             String firstStateActivities = path.substring(0, path.indexOf("[") - 1).replaceAll("\\(", "");
-//                        String transitionConstraint = path.substring(path.indexOf("[") + 1, path.indexOf("]"));
                             String transitionConstraint = path.substring(path.indexOf("$") + 1, path.lastIndexOf("$"));
                             String lastStateActivities = path.substring(path.lastIndexOf("$") + 1).replaceAll("\\)", "");
                             String[] splitFirstStateActivities = firstStateActivities.trim().split("#");
@@ -147,16 +146,12 @@ public class SelectDiagramsToProveController implements VPActionController {
                             String[] splitTransitionConstraint = transitionConstraint.trim().split(" ");
 
                             // Fill String with FirstState Activities
-
-
-//                        if (counter == 0) {
                             for (String s : splitFirstStateActivities) {
                                 if (!s.isBlank()) {
                                     stringbuilder.append(s).append(" & ");
                                 }
                             }
-//                            counter++;
-//                        }
+
                             // Fill String with Transition Constraint
                             for (String s : splitTransitionConstraint) {
                                 if (!s.isBlank()) {
@@ -165,12 +160,7 @@ public class SelectDiagramsToProveController implements VPActionController {
                                     stringbuilder.append(" ");
                                 }
                             }
-                            // Fill String with LastState Activities
-//                        for (String s : splitLastStateActivities) {
-//                            if (!s.isBlank()) {
-//                                stringbuilder.append(s).append(" & ");
-//                            }
-//                        }
+
                         } else {
                             helperList.add(path);
                         }
@@ -193,7 +183,7 @@ public class SelectDiagramsToProveController implements VPActionController {
                 ArrayList<String> reachableStates = new ArrayList<>();
                 for (Map.Entry<String, String> s : builtPaths.entrySet()) {
                     try {
-                        if (unsatisSolvers == 0) {
+//                        if (buildLogic) {
                             Solver solver = solverLogic.buildSolverLogic(s.getKey());
                             switch (solver.check()) {
                                 case SATISFIABLE:
@@ -213,7 +203,7 @@ public class SelectDiagramsToProveController implements VPActionController {
                                     viewManager.showMessage("Solver status is Unknown: " + Arrays.toString(solver.getAssertions()));
                                     break;
                             }
-                        }
+//                        }
                     } catch (Z3Exception | IndexOutOfBoundsException exception) {
                         viewManager.showMessage("Es ist ein Fehler in der Solverlogik aufgetreten", "peixo");
                         viewManager.showMessage(exception.getMessage());
@@ -230,7 +220,6 @@ public class SelectDiagramsToProveController implements VPActionController {
                         allStates.add(choice.getId());
                     }
                 }
-
                 if (reachableStates.containsAll(allStates)) {
                     viewManager.showMessage("Alle States sind erreichbar", "peixo");
                 } else {
@@ -244,7 +233,7 @@ public class SelectDiagramsToProveController implements VPActionController {
                             IState2 state = (IState2) e.getModelElement();
                             for (String s : unreachableStates) {
                                 if (state.getId().equals(s)) {
-                                    unreachableStatesToPrint.append(state.getName()).append(" ");
+                                    unreachableStatesToPrint.append(state.getName()).append(", ");
                                 }
                             }
                         }
@@ -252,15 +241,19 @@ public class SelectDiagramsToProveController implements VPActionController {
                             IChoice choice = (IChoice) e.getModelElement();
                             for (String s : unreachableStates) {
                                 if (choice.getId().equals(s)) {
-                                    unreachableStatesToPrint.append(choice.getName()).append(" ");
+                                    unreachableStatesToPrint.append(choice.getName()).append(", ");
                                 }
                             }
                         }
                     }
-                    viewManager.showMessage("Die States " + unreachableStatesToPrint + "sind nicht erreichbar", "peixo");
+                    if (unreachableStates.size() == 1) {
+                        viewManager.showMessage("Der State " + "\"" + unreachableStatesToPrint + "\"" + " ist nicht erreichbar.", "peixo");
+                    } else if (unreachableStates.size() > 1)
+                        viewManager.showMessage("Die States: " + "\"" + unreachableStatesToPrint + "\"" + " sind nicht erreichbar.", "peixo");
                 }
             }
         }
+
     }
 
     /**
@@ -349,6 +342,7 @@ public class SelectDiagramsToProveController implements VPActionController {
         AllDirectedPaths<String, DefaultEdge> allDirectedPaths = new AllDirectedPaths<>(g);
         ArrayList<String> paths = new ArrayList<>();
         for (String endingState : allVertices) {
+
             try {
                 if (!Objects.equals(initState, endingState)) {
                     String path = allDirectedPaths.getAllPaths(initState, endingState, false, 50).toString();
@@ -361,22 +355,24 @@ public class SelectDiagramsToProveController implements VPActionController {
                                 IState2 state = (IState2) el2.getModelElement();
                                 if (Objects.equals(state.getId(), endingState)) {
                                     String s = state.getName();
-                                    viewManager.showMessage("Es gibt keine Transition zum Endzustand " + s, "peixo");
+//                                    viewManager.showMessage("Es gibt keine Transition zum Endzustand " + s, "peixo");
                                 }
                             }
                         }
-                        unsatisSolvers++;
+//                        buildLogic = false;
                     }
                 }
             } catch (IllegalArgumentException exception) {
-                if (initState.isBlank()) {
-                    viewManager.showMessage("Es gibt keine Transition zum Startzustand", "peixo");
-                    unsatisSolvers++;
-                }
-                if (endingState.isBlank()) {
-                    viewManager.showMessage("Es gibt keine Transition zum Endzustand", "peixo");
-                    unsatisSolvers++;
-                }
+//                buildLogic = false;
+
+//                if (initState.isBlank()) {
+//                    viewManager.showMessage("Es gibt keine Transition zum Startzustand", "peixo");
+//                    unsatisSolvers++;
+//                }
+//                if (endingState.isBlank()) {
+//                    viewManager.showMessage("Es gibt keine Transition zum Endzustand", "peixo");
+//                    unsatisSolvers++;
+//                }
             }
 
         }

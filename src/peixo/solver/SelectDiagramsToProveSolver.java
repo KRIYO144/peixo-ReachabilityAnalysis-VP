@@ -48,6 +48,7 @@ public class SelectDiagramsToProveSolver {
             map.put(i, subs.get(i));
         }
 
+
         // Get the Array to format
         // The solver gets intiated in other Method
         parsedMap = parseArithmetics(map);
